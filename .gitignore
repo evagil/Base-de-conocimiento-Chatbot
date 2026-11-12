@@ -1,0 +1,22 @@
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+.env
+.env.*
+!.env.example
+storage/*
+!storage/.gitkeep
+backups/
+.idea/
+.vscode/
+*.log
+
+.local/
+__pycache__/
+
+# Respaldos con datos privados
+database/*.sql
+*.dump
+storage.tar.gz
+SHA256SUMS

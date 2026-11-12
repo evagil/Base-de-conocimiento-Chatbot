@@ -1,0 +1,14 @@
+spring:
+  jpa:
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: false
+
+app:
+  security:
+    jwt-secret: ${JWT_SECRET}
+    initial-admin-password: ${ADMIN_INITIAL_PASSWORD}
+  swagger-ui:
+    enabled: false

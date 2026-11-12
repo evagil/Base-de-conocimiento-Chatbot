@@ -1,0 +1,3 @@
+import { versionParams } from './version.js'
+import { http } from './httpClient.js'
+export const authApi={login:body=>http.post('/api/auth/login',body).then(r=>r.data),logout:refreshToken=>http.post('/api/auth/logout',{refreshToken}),me:()=>http.get('/api/auth/me').then(r=>r.data),updateProfile:body=>http.put('/api/auth/perfil',body).then(r=>r.data),changePassword:body=>http.post('/api/auth/password',body),users:()=>http.get('/api/usuarios').then(r=>r.data),createUser:body=>http.post('/api/usuarios',body).then(r=>r.data),updateUser:(id,body,version)=>http.put(`/api/usuarios/${id}`,body,versionParams(version)).then(r=>r.data),resetUserPassword:(id,body)=>http.post(`/api/usuarios/${id}/password`,body).then(r=>r.data),audit:()=>http.get('/api/auditoria').then(r=>r.data)}

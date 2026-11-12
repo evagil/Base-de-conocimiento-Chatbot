@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: base-conocimiento
+  profiles:
+    default: dev
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/base_conocimiento}
+    username: ${DB_USERNAME:base_conocimiento}
+    password: ${DB_PASSWORD:base_conocimiento}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration,classpath:db/vendor/{vendor}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+  web:
+    locale: es_AR
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+app:
+  security:
+    jwt-secret: ${JWT_SECRET:desarrollo-local-cambiar-esta-clave-obligatoriamente}
+    access-expiration: ${JWT_ACCESS_EXPIRATION:900}
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
+    initial-admin-email: ${ADMIN_INITIAL_EMAIL:admin@municipio.local}
+    initial-admin-user: ${ADMIN_INITIAL_USER:admin}
+    initial-admin-password: ${ADMIN_INITIAL_PASSWORD:Admin123!}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  storage:
+    path: ${STORAGE_PATH:../storage}
+    max-image-size: ${MAX_IMAGE_SIZE:10485760}

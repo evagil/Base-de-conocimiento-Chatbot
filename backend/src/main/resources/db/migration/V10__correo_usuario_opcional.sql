@@ -1,0 +1,2 @@
+ALTER TABLE usuarios ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE usuarios ALTER COLUMN email_normalizado DROP NOT NULL;

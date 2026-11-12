@@ -1,0 +1,11 @@
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { min-width: 320px; }
+.rich-content { line-height: 1.72; color: inherit; }
+.rich-content img { max-width: 100%; border-radius: 10px; }
+.rich-editor { cursor: text; }
+.rich-editor .tiptap { min-height: 150px; padding: 14px; outline: none; }
+.rich-editor .tiptap p:first-child { margin-top: 0; }
+@media (max-width: 899px) { .desktop-only { display: none !important; } }
+
+.rich-editor-compact .tiptap { min-height: 48px; }
