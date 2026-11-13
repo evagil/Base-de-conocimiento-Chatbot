@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest(properties = {
+        "app.ia.habilitada=false",
         "spring.datasource.url=jdbc:h2:mem:visibilidad;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "app.storage.path=target/visibility-test-storage"})
 @ActiveProfiles("securitytest")
@@ -72,6 +73,14 @@ class VisibilidadIntegrationTest {
         byte[] png = Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
         return archivos.cargar(propietario, id,
                 new MockMultipartFile("archivo", "captura.png", "image/png", png), "Captura", 0).id();
+    }
+
+    @Test void diagnosticoIaEsExclusivoDelAdministradorYNoNecesitaOllama() throws Exception {
+        mvc.perform(get("/api/ia/estado")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/ia/estado").header("Authorization", token(Rol.LECTOR))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/ia/estado").header("Authorization", token(Rol.EDITOR))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/ia/estado").header("Authorization", token(Rol.ADMINISTRADOR)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.habilitada").value(false));
     }
 
     @Test void aplicaLaMismaVisibilidadEnDetalleListadoYDescargas() throws Exception {

@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ManejadorGlobalExcepciones {
+    @ExceptionHandler(com.municipio.base_conocimiento.ia.exception.IaException.class)
+    ResponseEntity<ErrorResponse> errorIa(com.municipio.base_conocimiento.ia.exception.IaException ex) {
+        return respuesta(ex.getStatus(), ex.getCodigo(), ex.getMessage(), Map.of());
+    }
     @ExceptionHandler(ArchivoInvalidoException.class)
     ResponseEntity<ErrorResponse> archivoInvalido(ArchivoInvalidoException ex) {
         return respuesta(ex.getStatus(), ex.getCodigo(), ex.getMessage(), Map.of());

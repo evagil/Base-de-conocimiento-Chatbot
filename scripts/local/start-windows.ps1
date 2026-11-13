@@ -15,6 +15,18 @@ $env:JWT_SECRET = $config.jwtSecret
 $env:STORAGE_PATH = Join-Path $localRoot 'storage'
 $env:SERVER_ADDRESS = '127.0.0.1'
 $env:CORS_ALLOWED_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173'
+$iaConfigPath = Join-Path $localRoot 'ia-config.json'
+if (Test-Path $iaConfigPath) {
+    $iaConfig = Get-Content -LiteralPath $iaConfigPath -Raw | ConvertFrom-Json
+    $iaVariables = @('IA_ENABLED', 'OLLAMA_BASE_URL', 'OLLAMA_CHAT_MODEL', 'OLLAMA_AGENT_MODEL',
+        'OLLAMA_VISION_MODEL', 'OLLAMA_EMBEDDING_MODEL', 'OLLAMA_TIMEOUT', 'OLLAMA_CONNECT_TIMEOUT',
+        'OLLAMA_CONTEXT_TOKENS', 'IA_MAX_PROMPT_CHARS', 'IA_MAX_OUTPUT_TOKENS',
+        'IA_MAX_EMBEDDING_BATCH', 'IA_MAX_RESPONSE_BYTES')
+    foreach ($property in $iaConfig.PSObject.Properties) {
+        if ($property.Name -notin $iaVariables) { throw "Variable de IA no admitida: $($property.Name)" }
+        [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
+    }
+}
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
     $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
     $jar = Join-Path $localRoot 'backend.jar'

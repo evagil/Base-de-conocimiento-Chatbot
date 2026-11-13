@@ -22,9 +22,14 @@ try {
         if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) {
             throw "El puerto $Port está ocupado. No se modificó el proceso existente."
         }
-        & "$PgBin\pg_ctl.exe" -D $testData -l "$testRoot\postgres-tests.log" -o "-h 127.0.0.1 -p $Port" -w start
-        if ($LASTEXITCODE -ne 0) { throw 'No se pudo iniciar PostgreSQL de pruebas.' }
         $startedHere = $true
+        $control = Start-Process -FilePath "$PgBin\pg_ctl.exe" -ArgumentList @(
+            '-D', ('"' + $testData + '"'), '-l', ('"' + "$testRoot\postgres-tests.log" + '"'),
+            '-o', ('"-h 127.0.0.1 -p ' + $Port + '"'), '-w', 'start'
+        ) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$testRoot\postgres-tests-control.log" -RedirectStandardError "$testRoot\postgres-tests-control-error.log"
+        if (!$control.WaitForExit(30000)) { throw 'PostgreSQL de pruebas no inició dentro de 30 segundos.' }
+        $control.Refresh()
+        if ($control.ExitCode -ne 0) { throw 'No se pudo iniciar PostgreSQL de pruebas. Revisar los logs locales.' }
     }
     $exists = & "$PgBin\psql.exe" -w -h 127.0.0.1 -p $Port -U bc_test_admin -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='bc_concurrency_test'"
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo acceder a la instancia de pruebas.' }

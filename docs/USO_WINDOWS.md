@@ -35,6 +35,7 @@ Los datos persistentes y la configuración local están en `.local/`:
 - `backend.jar`: copia ejecutable que no se borra al ejecutar `mvn clean`.
 - `storage/`: copia de imágenes y documentos del respaldo.
 - `windows-config.json`: contraseña técnica y secreto JWT; no compartir.
+- `ia-config.json`: configuración opcional de Ollama, descrita en [IA_LOCAL.md](IA_LOCAL.md).
 - `backend.log`, `frontend.log` y sus archivos de errores: diagnóstico.
 - `postgres.log`: arranque y errores de la base.
 - `backend.pid` y `frontend.pid`: procesos iniciados por el script.

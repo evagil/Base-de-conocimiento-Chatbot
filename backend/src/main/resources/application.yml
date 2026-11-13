@@ -35,6 +35,20 @@ server:
     include-stacktrace: never
 
 app:
+  ia:
+    habilitada: ${IA_ENABLED:false}
+    url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}
+    modelo-conversacion: ${OLLAMA_CHAT_MODEL:granite4.2:3b}
+    modelo-agente: ${OLLAMA_AGENT_MODEL:granite4.2:3b}
+    modelo-multimodal: ${OLLAMA_VISION_MODEL:qwen2.5vl:3b}
+    modelo-embeddings: ${OLLAMA_EMBEDDING_MODEL:embeddinggemma:300m}
+    timeout: ${OLLAMA_TIMEOUT:120s}
+    conexion-timeout: ${OLLAMA_CONNECT_TIMEOUT:2s}
+    contexto: ${OLLAMA_CONTEXT_TOKENS:2048}
+    max-prompt-chars: ${IA_MAX_PROMPT_CHARS:4000}
+    max-output-tokens: ${IA_MAX_OUTPUT_TOKENS:128}
+    max-batch: ${IA_MAX_EMBEDDING_BATCH:8}
+    max-response-bytes: ${IA_MAX_RESPONSE_BYTES:1048576}
   security:
     jwt-secret: ${JWT_SECRET:desarrollo-local-cambiar-esta-clave-obligatoriamente}
     access-expiration: ${JWT_ACCESS_EXPIRATION:900}

@@ -14,6 +14,8 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Etapas, despliegue local y pruebas](docs/ETAPAS_DESPLIEGUE_Y_PRUEBAS.md)
 - [Concurrencia, versiones y pruebas PostgreSQL](docs/CONCURRENCIA.md)
 - [Pruebas y permisos para IA local](docs/PRUEBAS_IA.md)
+- [Conexión con Ollama y configuración de IA local](docs/IA_LOCAL.md)
+- [Hardware, selección y evaluación de modelos](docs/INSTALACION_MODELOS.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -30,6 +32,19 @@ La etapa 1 de preparación para IA local corrige la visibilidad de soluciones,
 pasos e imágenes para lectores y conserva el acceso de edición al historial.
 Se verificó con 39 pruebas backend y 56 frontend. Consultar
 [PRUEBAS_IA.md](docs/PRUEBAS_IA.md) para resultados, cobertura y comandos.
+
+La etapa 2 incorpora clientes Java para conversación, JSON estructurado y
+embeddings, con límites, errores controlados y diagnóstico para administradores.
+El modelo de conversación seleccionado es **`granite4.2:3b`, ejecutado localmente
+con Ollama**. También queda configurado como candidato del agente, cuya selección
+de herramientas requiere validación adicional en la etapa 7. El cliente acepta
+solo conexiones locales y rechaza modelos remotos; no envía consultas a servicios
+externos de IA. No se descargaron modelos durante esta integración.
+
+El candidato de embeddings es `embeddinggemma:300m`, pendiente de instalar.
+`qwen2.5vl:3b` queda reservado para visión opcional, sin instalar ni utilizar.
+El chatbot recibirá documentos e imágenes en su etapa de interfaz; el agente
+será exclusivamente textual, no analizará imágenes ni generará tickets.
 
 La Etapa 1 incluye:
 

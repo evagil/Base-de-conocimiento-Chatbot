@@ -140,3 +140,63 @@ Para volver a iniciar la aplicación:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/local/start-windows.ps1
 ```
+
+## Etapa 2: cliente Ollama y evaluación local
+
+Los tests de `ia/` usan un servidor HTTP efímero en loopback, respuestas simuladas
+y entradas sintéticas. Verifican conversación, JSON estructurado, embeddings,
+validación de configuración, diagnóstico, errores HTTP, modelo ausente,
+metadatos remotos, variante Thinking obligatoria, JSON inválido, vectores inválidos,
+límites, saturación, cancelación e interrupción. Un caso envía cabeceras y retrasa
+el cuerpo para comprobar que el timeout también limita su recepción completa.
+
+La matriz de seguridad incluye el endpoint administrativo `/api/ia/estado`:
+anónimo 401, lector/editor 403 y administrador 200 con IA deshabilitada, sin Ollama.
+
+La prueba `OllamaLocalSmokeTest` es optativa y no usa Spring ni la base de datos.
+Solo se habilita definiendo una URL local explícita:
+
+```powershell
+$env:BC_TEST_OLLAMA_URL = 'http://127.0.0.1:11434'
+powershell -ExecutionPolicy Bypass -File backend/scripts/test-postgres-concurrency.ps1
+Remove-Item Env:BC_TEST_OLLAMA_URL
+```
+
+Con esa variable, la verificación completa incluye una consulta real de texto
+sintético a `granite4.2:3b` utilizando el cliente Java. Sin ella se omite únicamente
+esa comprobación real; las pruebas normales de IA no requieren un servidor Ollama.
+No se descargan modelos durante los tests.
+
+Los ensayos de elección de herramientas solo observaron respuestas del modelo;
+no ejecutaron herramientas ni modificaron conocimiento. La prueba con esquema JSON
+seleccionó el nombre correcto pero generó un argumento semánticamente incorrecto.
+Se registra como limitación, no como validación satisfactoria del agente.
+
+Para revertir esta etapa, configurar `IA_ENABLED=false` y reiniciar el backend.
+También se pueden revertir los cambios de código y recompilar; no hay migraciones
+ni datos de conocimiento que revertir. Si se habilitó desde `.local/ia-config.json`,
+modificar ese archivo: sus valores tienen prioridad durante el arranque Windows.
+
+### Resultados de la etapa 2, 12/11/2026
+
+- Se ejecutó el script Windows completo con PostgreSQL de pruebas y
+  `BC_TEST_OLLAMA_URL` explícita: `mvn clean verify` aprobado.
+- Backend: 60 pruebas aprobadas, sin fallos ni omisiones. Incluye los once casos
+  PostgreSQL, 19 tests simulados de IA y una prueba real con Ollama.
+- JaCoCo: 780/816 líneas, 95,59 %; 478/576 ramas, 82,99 %.
+- El cliente Java consultó realmente `granite4.2:3b`: respuesta final de 21 tokens
+  en 40,86 segundos. No se usaron datos del respaldo para esa consulta.
+- Frontend: ESLint sin errores y las tres advertencias preexistentes; 56 pruebas
+  aprobadas y build aprobado. Cobertura del alcance configurado: líneas 100 %,
+  sentencias 96,42 %, funciones 94,89 % y ramas 93,24 %.
+- Se corrigió y verificó el arranque de PostgreSQL del script al redirigir la
+  salida: `pg_ctl` utiliza archivos de control separados y se espera únicamente
+  su proceso inicial. El clúster de pruebas se detuvo al terminar la suite.
+
+Logs y evidencia locales: `.local/ia-backend-verify.log`,
+`.local/ia-frontend-lint.log`, `.local/ia-frontend-coverage.log` y
+`.local/ia-frontend-build.log`. No están incluidos en Git.
+
+Estos resultados validan la conexión y sus controles, no un agente completo ni
+la precisión final del RAG. La selección de herramientas y argumentos mantiene
+las limitaciones documentadas en [INSTALACION_MODELOS.md](INSTALACION_MODELOS.md).
