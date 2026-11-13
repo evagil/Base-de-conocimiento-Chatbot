@@ -181,5 +181,17 @@ el guardado normal de problemas, soluciones, pasos o adjuntos.
 El lanzador Windows admite `.local/indice-config.json`. Los administradores
 pueden consultar `/api/ia/indice` y solicitar reconstrucción o reintento. La vista
 de fuentes vigentes controla publicación, actividad y versiones antes de la
-recuperación futura. Ver [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md) para límites,
+recuperación. Ver [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md) para límites,
 consistencia eventual, estados de error, migraciones y reversión.
+
+## Consulta RAG: etapa 5
+
+La búsqueda y la respuesta con evidencia se habilitan por separado del indexador:
+`RAG_ENABLED=true`, con `RAG_SEMANTIC_ENABLED=true` para combinar texto y
+embeddings. Requieren un índice preparado y, para el modo híbrido,
+`IA_ENABLED=true` con `embeddinggemma:300m`. La respuesta usa `granite4.2:3b`.
+El lanzador Windows admite `.local/rag-config.json`; ver [USO_WINDOWS.md](USO_WINDOWS.md).
+Los ocho parámetros, contratos, límites y reglas de abstención están en
+[ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md#consulta-híbrida-y-rag-extractivo-etapa-5).
+La interfaz conversacional corresponde a la etapa 6. Esta etapa no entrena ni
+modifica los pesos de los modelos: recupera fuentes y valida una cita literal.

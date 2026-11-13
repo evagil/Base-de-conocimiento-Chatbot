@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ManejadorGlobalExcepciones {
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    ResponseEntity<ErrorResponse> jsonInvalido(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        return respuesta(HttpStatus.BAD_REQUEST, "DATOS_INVALIDOS", "El cuerpo de la solicitud debe ser JSON válido.", Map.of());
+    }
     @ExceptionHandler(com.municipio.base_conocimiento.documentos.exception.DocumentoException.class)
     ResponseEntity<ErrorResponse> errorDocumento(com.municipio.base_conocimiento.documentos.exception.DocumentoException ex) {
         return respuesta(ex.getStatus(), ex.getCodigo(), ex.getMessage(), Map.of());

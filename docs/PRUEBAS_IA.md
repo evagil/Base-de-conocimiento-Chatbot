@@ -375,3 +375,68 @@ conservando las mismas comprobaciones. Después se repitieron lint, las 56 prueb
 con cobertura completa y build satisfactoriamente. Los diagnósticos de un único
 caso no representan la cobertura global; sus omisiones intencionales y cobertura
 parcial no forman parte del resultado final. No se cambiaron los umbrales.
+
+## Etapa 5: búsqueda híbrida y respuestas con fuentes
+
+La suite agrega pruebas de normalización y códigos completos, coseno numéricamente
+estable, fusión RRF, límites de candidatos, vectores corruptos, turnos concurrentes,
+fallos de proveedor, presupuestos de entrada y contexto, JSON inválido y citas
+inventadas. Una cita que aparece en la fuente pero quedó fuera del contexto
+enviado también se rechaza. La respuesta no acepta URLs ni campos extra del modelo.
+
+`ConsultaRagIntegrationTest` utiliza una base H2 propia y fuentes sintéticas
+confirmadas en transacciones independientes. Integra indexador, repositorio,
+búsqueda y generación con un doble de Ollama. Verifica referencias a soluciones,
+abstención sin evidencia, diferencias entre códigos, bajas y cambios de nombres
+de padres antes de reindexar, además de modificaciones durante la generación.
+`IndiceIntegrationTest` comprueba la compatibilidad de huellas al pausar el barrido.
+
+`IndicePostgresTest` prueba además el repositorio de consulta sobre PostgreSQL
+real: stemming español, ranking, parametrización, recorrido y exclusión inmediata
+de registros archivados. `SecurityIntegrationTest` comprueba 401 anónimo y acceso
+de los tres roles a ambas rutas de consulta; la administración del índice conserva
+su restricción. `ConsultaRagControllerTest` verifica contratos, validación y no-store;
+`FiltroConsultaRagTest` prueba el límite de 16 KiB con y sin tamaño declarado.
+
+`RespuestaRagLocalSmokeTest` se habilita con `BC_TEST_OLLAMA_URL`. Comprueba que
+`granite4.2:3b` selecciona evidencia sintética y que el servicio acepta una cita
+literal con referencia construida por el backend. Usa recuperación y vigencia
+simuladas: no representa una prueba de precisión sobre el corpus privado ni un
+ensayo HTTP completo contra producción. No se reducen las validaciones si el
+modelo devuelve una cita inventada. Las pruebas nativas anteriores de embeddings,
+conversación y OCR también permanecen en la suite completa.
+
+Ejecutar el comando completo de etapa 3 con las tres variables BC_TEST y luego
+lint, cobertura y build del frontend de forma secuencial. Los logs de esta etapa
+son `.local/rag-targeted.log`, `.local/rag-backend-verify.log` y
+`.local/rag-frontend-{lint,coverage,build}.log`. La instancia restaurada y su
+storage no se usan como datos de prueba. La API permanece desactivada por defecto;
+la configuración privada Windows permite activarla para uso local.
+
+### Resultados del backend de la etapa 5, 13/11/2026
+
+- `mvn clean verify` aprobado: 130 pruebas, sin fallos, errores ni omisiones;
+  27 casos adicionales respecto de la etapa 4. Incluye PostgreSQL real, OCR y
+  tres comprobaciones nativas de Ollama. Duración aproximada: 7 min 42 s.
+- JaCoCo: 1482/1528 líneas (96,99 %) y 1133/1298 ramas (87,29 %), con el umbral
+  de líneas en 92 % y sin nuevas exclusiones.
+- PostgreSQL verificó stemming español, ranking y lectura de fuentes vigentes
+  mediante el repositorio utilizado por la API, además de las comprobaciones
+  previas de migraciones, concurrencia, rollback y lease.
+- `granite4.2:3b` pasó la selección de evidencia del servicio RAG con una fuente
+  sintética en 51,82 s. La comprobación de conversación anterior tardó 29,95 s;
+  embeddings produjo vectores de 768 dimensiones en 6,93 s. Son mediciones de
+  estas pruebas, no garantías de latencia ni de precisión sobre el corpus real.
+- La instancia PostgreSQL de pruebas se detuvo al terminar. Se conserva V12
+  como última migración y no se usaron datos del respaldo en las pruebas.
+- Frontend: 14 archivos y 56 pruebas aprobadas en aproximadamente tres minutos.
+  Cobertura del alcance configurado: líneas 117/117 (100 %), sentencias 96,42 %,
+  funciones 94,89 % y ramas 93,24 %. Se mantuvieron los umbrales existentes.
+- ESLint sin errores y con las tres advertencias previas de Fast Refresh.
+  Build de producción aprobado; conserva el aviso de bundle superior a 500 kB.
+- Backend local reiniciado con el JAR comprobado por SHA-256 y RAG activado
+  mediante configuración privada. Flyway confirmó V12 sin migraciones pendientes.
+  Frontend HTTP 200; autenticación, administración del índice y ambas rutas RAG
+  respondieron 401 sin token. Los casos positivos autenticados se verificaron
+  mediante las pruebas automatizadas; no se usaron credenciales de usuarios reales
+  para hacer consultas al corpus restaurado durante esta comprobación de arranque.

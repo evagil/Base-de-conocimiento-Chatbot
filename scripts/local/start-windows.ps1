@@ -50,6 +50,16 @@ if (Test-Path $indexConfigPath) {
         [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
     }
 }
+$ragConfigPath = Join-Path $localRoot 'rag-config.json'
+if (Test-Path $ragConfigPath) {
+    $ragConfig = Get-Content -LiteralPath $ragConfigPath -Raw | ConvertFrom-Json
+    $ragVariables = @('RAG_ENABLED', 'RAG_SEMANTIC_ENABLED', 'RAG_MAX_QUESTION_CHARS', 'RAG_MAX_CANDIDATES',
+        'RAG_MAX_RESULTS', 'RAG_MAX_CONTEXT_CHARS', 'RAG_MIN_SIMILARITY', 'RAG_QUERY_TIMEOUT')
+    foreach ($property in $ragConfig.PSObject.Properties) {
+        if ($property.Name -notin $ragVariables) { throw "Variable de consulta RAG no admitida: $($property.Name)" }
+        [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
+    }
+}
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
     $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
     $jar = Join-Path $localRoot 'backend.jar'

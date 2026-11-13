@@ -17,7 +17,7 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Conexión con Ollama y configuración de IA local](docs/IA_LOCAL.md)
 - [Hardware, selección y evaluación de modelos](docs/INSTALACION_MODELOS.md)
 - [Extracción local de PDF, DOCX y JPG: etapa 3 de IA](docs/CHATBOT_MULTIMODAL.md)
-- [Índice incremental y preparación del RAG: etapa 4 de IA](docs/ARQUITECTURA_RAG.md)
+- [Índice incremental, búsqueda híbrida y respuestas RAG: etapas 4 y 5 de IA](docs/ARQUITECTURA_RAG.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -26,9 +26,10 @@ El alcance de la medición del frontend está explicado en la guía de pruebas.
 ## Estado actual
 
 Actualizado el 13/11/2026. Las etapas originales 1 a 4 están implementadas. El esquema
-incluye migraciones V1 a V12 en PostgreSQL; la búsqueda de texto completo de la etapa 5 sigue
-pendiente. Actualmente el árbol se filtra por área, subárea, título y etiquetas
-en el navegador. Todavía no hay un chatbot implementado.
+incluye migraciones V1 a V12 en PostgreSQL. La etapa 5 de IA incorpora una API de
+búsqueda híbrida y respuestas con citas verificadas. Actualmente el árbol se filtra
+por área, subárea, título y etiquetas en el navegador. La interfaz del chatbot
+corresponde a la etapa 6 y todavía está pendiente.
 
 La etapa 1 de preparación para IA local corrige la visibilidad de soluciones,
 pasos e imágenes para lectores y conserva el acceso de edición al historial.
@@ -52,7 +53,7 @@ La etapa 3 de IA agrega `POST /api/documentos/extraer`: extrae texto de PDF y
 DOCX y usa Tesseract local para JPG/JPEG y páginas PDF escaneadas. El endpoint
 requiere sesión, aplica límites y elimina los archivos temporales; no guarda
 conocimiento ni utiliza servicios externos. La pantalla del chatbot
-y las respuestas con RAG continúan pendientes. Ver [la guía de extracción](docs/CHATBOT_MULTIMODAL.md)
+continúa pendiente. Ver [la guía de extracción](docs/CHATBOT_MULTIMODAL.md)
 para activar la función, instalar OCR y consultar sus limitaciones.
 
 La etapa 4 agrega un índice derivado de conocimiento publicado y activo, con
@@ -60,8 +61,14 @@ fragmentos, metadatos, páginas y embeddings opcionales. Se actualiza mediante
 un barrido en segundo plano, registra fallos y permite reconstrucción y reintentos
 administrativos. No cambia las transacciones del guardado normal. Esta instalación
 usa texto completo nativo de PostgreSQL y vectores JSON portables porque no tiene
-pgvector. La recuperación híbrida y las respuestas RAG corresponden a la etapa 5;
-ver [ARQUITECTURA_RAG.md](docs/ARQUITECTURA_RAG.md).
+pgvector. Ver [ARQUITECTURA_RAG.md](docs/ARQUITECTURA_RAG.md).
+
+La etapa 5 expone `POST /api/rag/buscar` y `POST /api/rag/responder`, con JWT para
+los tres roles. Combina texto completo español y similitud de embeddings mediante
+una comparación acotada en Java. El modelo selecciona una cita literal; el backend
+comprueba su contenido y la vigencia de la fuente antes de responder. Si falta
+evidencia, se abstiene. Se habilita con `RAG_ENABLED=true`; no necesita nuevas
+migraciones. La integración de estas APIs con la pantalla corresponde a la etapa 6.
 
 La Etapa 1 incluye:
 

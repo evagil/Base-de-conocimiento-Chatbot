@@ -127,6 +127,13 @@ class IndiceIntegrationTest {
             assertThat(cantidad()).isZero();assertThat(indice.estado(problema).estado()).isEqualTo("ERROR");
         }
     }
+    @Test void pausarElBarridoConservaLaHuellaDeUnIndiceExistente(){
+        var snapshot=fuentes.obtener(problema);
+        var pausada=new ConfiguracionIndice(false,config.embeddings(),config.tamanoFragmento(),config.solapamiento(),config.maxFragmentos(),config.maxFuentes(),config.maxAdjuntos(),config.timeout());
+        var detenido=new IndexadorConocimiento(pausada,ia,fuentes,indice,fragmentador,adjuntos,ollama,json);
+        assertThat(detenido.huella(snapshot)).isEqualTo(indexador.huella(snapshot));
+        assertThat(indexador.huella(snapshot)).isEqualTo(LectorAdjuntoIndice.huella(json.writeValueAsBytes(List.of("indice-v1",config.toString(),ia.modeloEmbeddings(),snapshot))));
+    }
     @Test void limitaTiempoYFragmentosSinConsultarAlModelo(){
         var corto=new IndexadorConocimiento(new ConfiguracionIndice(true,true,600,80,128,100,3,Duration.ofNanos(1)),ia,fuentes,indice,fragmentador,adjuntos,ollama,json);
         jdbc.update("UPDATE rag_control SET cursor_id=? WHERE id=1",problema-1);corto.procesarSiguiente();

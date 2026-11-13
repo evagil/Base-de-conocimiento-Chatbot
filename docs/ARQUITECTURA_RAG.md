@@ -1,8 +1,8 @@
-# Índice del conocimiento: etapa 4 de IA
+# Índice y consulta del conocimiento: etapas 4 y 5 de IA
 
-Esta etapa prepara las fuentes para la recuperación posterior. No agrega todavía
-búsqueda híbrida, respuestas de chatbot ni herramientas del agente: corresponden
-a las etapas 5, 6 y 7. El conocimiento original sigue siendo la fuente de verdad.
+La etapa 4 prepara las fuentes y la etapa 5 agrega búsqueda híbrida y respuestas
+con evidencia. La pantalla del chatbot y las herramientas del agente corresponden
+a las etapas 6 y 7. El conocimiento original sigue siendo la fuente de verdad.
 
 ## Datos y arquitectura
 
@@ -22,7 +22,12 @@ flowchart LR
     Ollama --> Indice[(Índice derivado)]
     Indice --> Vista[Fuentes vigentes]
     Datos --> Vista
-    Vista --> Futuro[Recuperación: etapa 5]
+    Vista --> Recuperacion[Texto completo y coseno acotado]
+    Pregunta[Consulta autenticada] --> Recuperacion
+    Recuperacion --> Fusion[Fusión RRF y comprobación de vigencia]
+    Fusion --> Modelo[Ollama selecciona una cita]
+    Modelo --> Validacion[Cita literal y vigencia comprobadas]
+    Validacion --> Respuesta[Respuesta con fuente o abstención]
 ```
 
 | Tabla/vista | Contenido |
@@ -84,9 +89,9 @@ La vista `rag_fragmentos_vigentes` verifica nuevamente publicación y actividad
 del problema y sus padres, actividad de solución/paso/archivo, versiones del
 origen y del problema y estado LISTO con huella coincidente. Una baja o un cambio
 de versión puede dejar de ser visible antes del siguiente barrido. No se debe
-consultar `rag_fragmentos` directamente desde la futura búsqueda ni tratar el
-estado copiado del índice como una autorización. La etapa 5 deberá volver a
-validar fuentes y permisos antes de entregar contexto o citas al usuario.
+consultar `rag_fragmentos` directamente desde la búsqueda ni tratar el
+estado copiado del índice como una autorización. La etapa 5 vuelve a validar
+fuentes y permisos antes de entregar contexto o citas al usuario.
 
 ## Fragmentación y embeddings
 
@@ -106,10 +111,10 @@ confiables y no se ejecutan sus instrucciones.
 En esta instalación Windows no está disponible `vector.control` de pgvector.
 Por eso V11 almacena vectores como JSON en una columna TEXT junto al modelo y
 la dimensión, sin forzar extensiones ni compilar componentes nativos. V12 agrega
-el índice textual nativo `to_tsvector('spanish', texto)`. La futura búsqueda
-semántica deberá usar una comparación acotada en Java, con filtros previos, o
-una migración posterior a pgvector: todavía no se ofrece búsqueda vectorial ni
-un índice ANN. Esta alternativa es apropiada para validar el catálogo local;
+el índice textual nativo `to_tsvector('spanish', texto)`. La etapa 5 compara
+vectores mediante coseno acotado en Java y filtros previos. No utiliza un índice
+ANN. Una migración posterior a pgvector es una opción para ampliar la escala.
+Esta alternativa permite validar el catálogo local;
 su escalabilidad deberá medirse antes de usar catálogos grandes.
 
 `RAG_EMBEDDINGS_ENABLED=false` permite preparar un índice textual sin Ollama.
@@ -201,3 +206,96 @@ Para desactivar: `RAG_INDEX_ENABLED=false` y reiniciar. Se conserva el CRUD y el
 Después de aplicar V11/V12 no modificar esas migraciones ni retroceder su historial
 Flyway; una reversión de esquema requiere una migración posterior expresamente
 revisada. Los datos derivados pueden reconstruirse desde las fuentes originales.
+
+## Consulta híbrida y RAG extractivo: etapa 5
+
+La API de consulta requiere JWT de ADMINISTRADOR, EDITOR o LECTOR. Solo recupera
+conocimiento PUBLICADO y activo, incluidos sus padres y orígenes activos. Mantiene
+V12 como última migración y no modifica el conocimiento original. La auditoría
+existente registra usuario, método, ruta, estado e IP; no registra preguntas,
+prompts ni respuestas. Los DTO no contienen huellas, vectores ni rutas físicas.
+Las respuestas exitosas llevan `Cache-Control: no-store`.
+
+| Método y ruta | Entrada | Salida |
+|---|---|---|
+| `POST /api/rag/buscar` | `{"pregunta":"¿Cómo corregir E17?"}` | `estado`, `modo`, `acotada`, `fuentes` |
+| `POST /api/rag/responder` | La misma entrada textual | `estado`, `texto`, `modelo`, `fuentes`, `busquedaAcotada` |
+
+Cada fuente identifica problema, solución, paso y archivo cuando corresponden,
+tipo, título, página opcional, extracto y puntuación. El backend construye
+`enlace` hacia `/problemas/{id}` y `enlaceArchivo` hacia la descarga privada
+`/api/archivos/{id}/contenido`; esta última sigue requiriendo JWT. No acepta
+enlaces suministrados por el modelo. La interfaz para abrir estas referencias y
+combinar la consulta con documentos temporales corresponde a la etapa 6.
+
+La recuperación normaliza la pregunta y combina dos rankings:
+
+1. PostgreSQL usa `websearch_to_tsquery`, `to_tsvector('spanish', texto)` y
+   `ts_rank_cd`, con parámetros SQL. H2 usa una comparación textual portable
+   para las pruebas y no sustituye la comprobación real en PostgreSQL.
+2. `embeddinggemma:300m` vectoriza la pregunta; se comparan vectores del mismo
+   modelo y dimensión mediante coseno. Se ignoran vectores corruptos o no finitos.
+3. La fusión RRF suma `61 / (2 * (61 + posición))`, con posiciones desde cero,
+   y desempata por ID. La puntuación expresa posición relativa, no probabilidad
+   de corrección. Para códigos como E17 se exige coincidencia del código completo:
+   E170 y E18 quedan fuera aunque su similitud semántica sea alta.
+
+Se conservan hasta cuatro veces el máximo de resultados por ranking. La búsqueda
+semántica recorre hasta `RAG_MAX_CANDIDATES` fragmentos por ID, filtrados por
+modelo y dimensión. La búsqueda textual de PostgreSQL obtiene ese máximo por
+relevancia; el recorrido portable usa ID. Si hay más candidatos se devuelve
+`acotada=true`: podrían existir mejores fuentes fuera del conjunto recorrido.
+No se promete recuperación exhaustiva ni escalabilidad ANN. Un catálogo grande
+requiere medir cobertura de recuperación y evaluar pgvector antes de ampliar uso.
+
+Antes de devolver resultados se recalcula la huella completa del snapshot y se
+relee cada fragmento vigente. Esto detecta también cambios en etiquetas, nombres
+de padres o relaciones que no incrementan la versión del problema. La respuesta
+comprueba nuevamente las fuentes antes y después de generar. Un cambio durante
+la generación devuelve `FUENTES_ACTUALIZADAS`, sin el contenido retirado. Estas
+comprobaciones reflejan el estado leído; un cambio posterior a la última lectura
+se verá en la próxima consulta. Pausar el barrido no cambia la huella del índice
+creado: conserva compatibilidad con los índices de la etapa 4.
+
+El RAG es **extractivo**: el modelo recibe pregunta y fuentes como datos no
+confiables y debe producir JSON con una única cita de entre 15 y 160 caracteres,
+o una lista vacía. El backend valida el esquema y exige que el extracto aparezca
+literalmente dentro del texto efectivamente enviado al modelo. Compone una
+respuesta breve y agrega la referencia verificada. No admite prosa libre,
+herramientas, URLs del modelo ni hechos externos. Esta decisión favorece la
+trazabilidad con un modelo pequeño y 128 tokens de salida; no demuestra por sí
+sola que toda cita elegida responda correctamente la intención de la pregunta.
+Una evaluación amplia de relevancia queda para la validación integral de etapa 8.
+
+Sin resultados no se llama al modelo de conversación. Sin evidencia verificable
+se devuelve información insuficiente y una lista de fuentes vacía. Estados:
+`COINCIDENCIAS`, `SIN_COINCIDENCIAS` e `INDICE_NO_LISTO` en búsqueda;
+`CON_FUENTES`, `INFORMACION_INSUFICIENTE`, `RESPUESTA_NO_VERIFICABLE`,
+`FUENTES_ACTUALIZADAS` e `INDICE_NO_LISTO` en respuesta.
+
+| Variable | Predeterminado |
+|---|---|
+| `RAG_ENABLED` | `false` |
+| `RAG_SEMANTIC_ENABLED` | `true` |
+| `RAG_MAX_QUESTION_CHARS` | `1000` |
+| `RAG_MAX_CANDIDATES` | `2000` |
+| `RAG_MAX_RESULTS` | `3`, máximo permitido `5` |
+| `RAG_MAX_CONTEXT_CHARS` | `1600` |
+| `RAG_MIN_SIMILARITY` | `0.65` |
+| `RAG_QUERY_TIMEOUT` | `240s` |
+
+`RAG_SEMANTIC_ENABLED=false` habilita consulta textual sin vectorizar la pregunta;
+`/responder` sigue necesitando el modelo de conversación. Se acota el cuerpo JSON
+a 16 KiB incluso sin Content-Length y el contexto respeta también el presupuesto
+global de prompts. Cada servicio admite una operación simultánea y Ollama
+conserva su propio turno compartido con el indexador. Un conflicto devuelve 429;
+no se oculta como ausencia de conocimiento. El presupuesto temporal se comprueba
+entre operaciones: una inferencia iniciada puede terminar más tarde, pero ese
+resultado se descarta; conserva además el timeout HTTP del cliente de Ollama.
+
+Errores principales: 503 `RAG_DESHABILITADO` o `RAG_INDICE_NO_DISPONIBLE`,
+429 `RAG_OCUPADO`, 400 `RAG_PREGUNTA_INVALIDA` o `DATOS_INVALIDOS`,
+413 `RAG_CONSULTA_DEMASIADO_GRANDE` o `RAG_CONTEXTO_INSUFICIENTE`,
+504 `RAG_TIMEOUT`, 502 `RAG_VECTOR_INVALIDO`. Los errores controlados de Ollama
+se propagan con sus códigos IA existentes. Para desactivar consultas sin afectar
+el índice ni el CRUD, usar `RAG_ENABLED=false` y reiniciar el backend.

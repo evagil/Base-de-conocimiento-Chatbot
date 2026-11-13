@@ -189,3 +189,30 @@ en el puerto 55432 como los archivos de `.local/storage`. No copiar el directori
 de datos PostgreSQL mientras está funcionando como reemplazo de un dump.
 La instalación Windows no tiene copias automáticas configuradas; las tareas
 systemd de [uso en Ubuntu](USO_LOCAL.md) solo corresponden a Linux.
+
+## Habilitar las consultas RAG de la etapa 5
+
+Con Ollama abierto, los modelos `granite4.2:3b` y `embeddinggemma:300m`
+instalados y el índice de la etapa 4 preparado, crear o editar el archivo privado
+`.local/rag-config.json`:
+
+```json
+{
+  "RAG_ENABLED": "true",
+  "RAG_SEMANTIC_ENABLED": "true"
+}
+```
+
+Recompilar y reiniciar el backend con los scripts habituales para aplicar cambios.
+El lanzador valida los nombres admitidos y el JSON tiene prioridad sobre sus
+variables de entorno. `RAG_ENABLED=false` desactiva las consultas conservando
+el CRUD y los datos. Configurar `RAG_SEMANTIC_ENABLED=false` permite buscar solo
+por texto; generar una respuesta todavía requiere Ollama. El barrido y la
+consulta usan flags independientes: pausar el barrido permite consultar el índice
+existente, sujeto a las verificaciones de vigencia.
+
+La API recibe un JWT de cualquiera de los tres roles y una pregunta textual en
+`POST /api/rag/buscar` o `POST /api/rag/responder`. Por ejemplo, el cuerpo es
+`{"pregunta":"¿Cómo corregir E17?"}`. La pantalla para interactuar con estas APIs
+se implementa en la etapa 6; el navegador mantiene por ahora la interfaz existente.
+Consultar [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md) para contratos y limitaciones.

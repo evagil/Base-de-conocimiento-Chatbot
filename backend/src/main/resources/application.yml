@@ -41,7 +41,21 @@ server:
     include-message: never
     include-stacktrace: never
 
+logging:
+  level:
+    # Evita el registro de cuerpos de preguntas y respuestas por los convertidores web.
+    org.springframework.web: INFO
+
 app:
+  rag:
+    habilitado: ${RAG_ENABLED:false}
+    semantica: ${RAG_SEMANTIC_ENABLED:true}
+    max-pregunta: ${RAG_MAX_QUESTION_CHARS:1000}
+    max-candidatos: ${RAG_MAX_CANDIDATES:2000}
+    max-resultados: ${RAG_MAX_RESULTS:3}
+    max-contexto: ${RAG_MAX_CONTEXT_CHARS:1600}
+    similitud-minima: ${RAG_MIN_SIMILARITY:0.65}
+    timeout: ${RAG_QUERY_TIMEOUT:240s}
   indice:
     habilitado: ${RAG_INDEX_ENABLED:false}
     embeddings: ${RAG_EMBEDDINGS_ENABLED:false}

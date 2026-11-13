@@ -83,7 +83,12 @@ public class IndexadorConocimiento {
             indice.fallar(trabajo,huella,codigo,intentos);return true;
         }finally{indice.liberar(trabajo);}
     }
-    public String huella(FuentesIndice snapshot){return LectorAdjuntoIndice.huella(json.writeValueAsBytes(List.of("indice-v1",config.toString(),ia.modeloEmbeddings(),snapshot)));}
+    public String huella(FuentesIndice snapshot){
+        // Un índice ya creado se puede consultar con el barrido pausado.
+        var activa=config.habilitado()?config:new ConfiguracionIndice(true,config.embeddings(),config.tamanoFragmento(),config.solapamiento(),
+                config.maxFragmentos(),config.maxFuentes(),config.maxAdjuntos(),config.timeout());
+        return LectorAdjuntoIndice.huella(json.writeValueAsBytes(List.of("indice-v1",activa.toString(),ia.modeloEmbeddings(),snapshot)));
+    }
     private void agregar(List<Fragmento> partes,Fuente fuente,Integer pagina,String texto){
         for(String parte:fragmentador.dividir(texto)){
             if(partes.size()>=config.maxFragmentos())throw new IllegalArgumentException("LIMITE_FRAGMENTOS");

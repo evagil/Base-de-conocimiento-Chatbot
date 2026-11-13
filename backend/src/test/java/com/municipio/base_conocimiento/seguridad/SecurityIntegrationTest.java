@@ -21,6 +21,14 @@ class SecurityIntegrationTest{
   mvc.perform(get("/api/auth/me").header("Authorization","Bearer "+adminToken)).andExpect(status().isOk()).andExpect(jsonPath("$.rol").value("ADMINISTRADOR"));
   mvc.perform(post("/api/usuarios").header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Lectora\",\"usuario\":\"lectora\",\"email\":\"lectora@municipio.local\",\"password\":\"Password123!\",\"rol\":\"LECTOR\"}")).andExpect(status().isCreated());
   JsonNode lector=login("lectora","Password123!");String lectorToken=lector.get("accessToken").asText();
+  mvc.perform(post("/api/usuarios").header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Editor\",\"usuario\":\"editor-rag\",\"email\":\"editor-rag@municipio.local\",\"password\":\"Password123!\",\"rol\":\"EDITOR\"}")).andExpect(status().isCreated());
+  String editorToken=login("editor-rag","Password123!").get("accessToken").asText();
+  for(String ruta:java.util.List.of("/api/rag/buscar","/api/rag/responder")) {
+   mvc.perform(post(ruta).contentType(MediaType.APPLICATION_JSON).content("{\"pregunta\":\"Error E17\"}")).andExpect(status().isUnauthorized());
+   for(String token:java.util.List.of(adminToken,editorToken,lectorToken))
+    mvc.perform(post(ruta).header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content("{\"pregunta\":\"Error E17\"}"))
+     .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.codigo").value("RAG_DESHABILITADO"));
+  }
   mvc.perform(get("/api/ia/indice").header("Authorization","Bearer "+adminToken)).andExpect(status().isOk()).andExpect(jsonPath("$.habilitado").value(false));
   mvc.perform(get("/api/ia/indice").header("Authorization","Bearer "+lectorToken)).andExpect(status().isForbidden());
   mvc.perform(post("/api/ia/indice/reconstruir").header("Authorization","Bearer "+lectorToken)).andExpect(status().isForbidden());
