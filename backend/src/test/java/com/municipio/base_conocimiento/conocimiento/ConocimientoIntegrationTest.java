@@ -24,7 +24,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties={"app.storage.path=target/test-storage","app.storage.max-image-size=1024"})
+@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:conocimiento;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","app.storage.path=target/test-storage","app.storage.max-image-size=1024"})
 @ActiveProfiles("test") @Transactional
 class ConocimientoIntegrationTest {
     @Autowired AreaService areas; @Autowired ProblemaService problemas; @Autowired SolucionService soluciones; @Autowired ArchivoService archivos;

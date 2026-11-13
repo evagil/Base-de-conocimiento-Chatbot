@@ -32,6 +32,7 @@ powershell -ExecutionPolicy Bypass -File scripts/local/stop-windows.ps1
 Los datos persistentes y la configuración local están en `.local/`:
 
 - `postgres/`: clúster PostgreSQL del proyecto.
+- `backend.jar`: copia ejecutable que no se borra al ejecutar `mvn clean`.
 - `storage/`: copia de imágenes y documentos del respaldo.
 - `windows-config.json`: contraseña técnica y secreto JWT; no compartir.
 - `backend.log`, `frontend.log` y sus archivos de errores: diagnóstico.
@@ -101,6 +102,11 @@ cd backend
 
 Luego detener e iniciar nuevamente. Los scripts de inicio no recompilan.
 La instancia local se inicia con el script; no se instaló como servicio de Windows.
+
+Al iniciar el backend se copia el JAR compilado de `backend/target` a
+`.local/backend.jar`. Si se ejecuta `clean`, el backend conserva esa copia.
+Si no hay un JAR nuevo en `target`, el script utiliza la copia local existente.
+Para aplicar cambios hay que compilar y luego reiniciar.
 
 El frontend se ejecuta con Vite en modo desarrollo y toma los cambios del código.
 Si cambian sus dependencias, detener el proyecto y ejecutar desde la raíz:

@@ -1,5 +1,8 @@
-import { Box, Button, Stack, TextField } from '@mui/material'
-import { AddPhotoAlternate } from '@mui/icons-material'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
+import AddPhotoAlternate from '@mui/icons-material/AddPhotoAlternate'
 
 export const asImages = files => Array.from(files).map((file,index) => ({ file, alt: file.name.replace(/\.[^.]+$/, '') || `Imagen pegada ${index + 1}` }))
 

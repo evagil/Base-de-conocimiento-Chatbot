@@ -1,6 +1,20 @@
 import { useState } from 'react'
-import { Box, IconButton, Tooltip, Chip, Collapse, List, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
-import { EditOutlined, ExpandLess, ExpandMore, Folder, FolderOpen, ArticleOutlined } from '@mui/icons-material'
+import Box from '@mui/material/Box'
+import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
+import Chip from '@mui/material/Chip'
+import Collapse from '@mui/material/Collapse'
+import List from '@mui/material/List'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
+import Typography from '@mui/material/Typography'
+import EditOutlined from '@mui/icons-material/EditOutlined'
+import ExpandLess from '@mui/icons-material/ExpandLess'
+import ExpandMore from '@mui/icons-material/ExpandMore'
+import Folder from '@mui/icons-material/Folder'
+import FolderOpen from '@mui/icons-material/FolderOpen'
+import ArticleOutlined from '@mui/icons-material/ArticleOutlined'
 
 export default function NavigationTree({ areas, selectedId, onSelect, onEditArea, onEditSubarea }) {
   const [open, setOpen] = useState({})

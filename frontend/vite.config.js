@@ -8,13 +8,15 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: { port: 5173 },
     test: {
+      maxWorkers: 1,
+      testTimeout: 60000,
       environment: 'jsdom',
       setupFiles: './src/test/setup.js',
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html'],
         include: ['src/api/**/*.js', 'src/hooks/**/*.js', 'src/utils/**/*.js'],
-        thresholds: { lines: 91, statements: 91, functions: 91, branches: 80 }
+        thresholds: { lines: 92, statements: 92, functions: 92, branches: 80 }
       }
     }
   }

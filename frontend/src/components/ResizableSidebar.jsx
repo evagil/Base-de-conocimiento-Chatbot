@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, Drawer } from '@mui/material'
+import Box from '@mui/material/Box'
+import Drawer from '@mui/material/Drawer'
 
 const minimum = 260
 const defaultWidth = 350

@@ -19,6 +19,11 @@ y de `CONCURRENCIA.md` no sustituyen una ejecución actual.
 
 ## Regla de calidad obligatoria
 
+Para la integración de IA local se elevó el umbral operativo a 92 % de líneas.
+Ver [PRUEBAS_IA.md](PRUEBAS_IA.md) para el alcance, los comandos Windows y las
+pruebas de visibilidad. Las referencias al 91 % siguientes describen el mínimo
+original de las etapas; la configuración vigente es la que exige 92 %.
+
 Cada etapa debe finalizar con **más del 90 % de cobertura automatizada**. El mínimo operativo será 91 % para evitar interpretar 90 % exacto como suficiente.
 
 La puerta automática se aplica a la cobertura de líneas. JaCoCo también reporta ramas para identificar decisiones que necesitan más escenarios. Se controlan:

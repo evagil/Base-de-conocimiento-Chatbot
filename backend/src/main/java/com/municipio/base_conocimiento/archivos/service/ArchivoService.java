@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import com.municipio.base_conocimiento.seguridad.service.SeguridadActual;
+import com.municipio.base_conocimiento.seguridad.service.VisibilidadConocimiento;
 
 @Service @Transactional(readOnly=true)
 public class ArchivoService {
@@ -30,11 +31,12 @@ public class ArchivoService {
     private final Path raiz; private final long maximo;
     private final SeguridadActual seguridad;
     private final DetectorDocumento documentos;
+    private final VisibilidadConocimiento visibilidad;
     public ArchivoService(ArchivoRepository archivos,ProblemaRepository problemas,SolucionRepository soluciones,PasoSolucionRepository pasos,
-            DetectorImagen detector,DetectorDocumento documentos,JdbcTemplate jdbc,SeguridadActual seguridad,@Value("${app.storage.path}") String path,@Value("${app.storage.max-image-size}") long maximo) {
+            DetectorImagen detector,DetectorDocumento documentos,JdbcTemplate jdbc,SeguridadActual seguridad,VisibilidadConocimiento visibilidad,@Value("${app.storage.path}") String path,@Value("${app.storage.max-image-size}") long maximo) {
         this.archivos=archivos;this.problemas=problemas;this.soluciones=soluciones;this.pasos=pasos;this.detector=detector;this.jdbc=jdbc;
         this.raiz=Paths.get(path).toAbsolutePath().normalize();this.maximo=maximo;
-        this.seguridad=seguridad;this.documentos=documentos;
+        this.seguridad=seguridad;this.documentos=documentos;this.visibilidad=visibilidad;
     }
     @Transactional public ArchivoResponse cargar(Propietario tipo,Long propietarioId,MultipartFile multipart,String alternativo,int orden) {
         return cargarArchivo(tipo, propietarioId, multipart, alternativo, orden, false);
@@ -65,14 +67,22 @@ public class ArchivoService {
     }
     public List<ArchivoResponse> listar(Propietario tipo,Long propietarioId){return listarArchivos(tipo,propietarioId).stream().filter(a->a.tipoMime().startsWith("image/")).toList();}
     public List<ArchivoResponse> listarDocumentos(Propietario tipo,Long propietarioId){return listarArchivos(tipo,propietarioId).stream().filter(a->!a.tipoMime().startsWith("image/") && a.activo()).toList();}
-    private List<ArchivoResponse> listarArchivos(Propietario tipo,Long propietarioId){validarPropietario(tipo,propietarioId);if(seguridad.esLector()&&!propietarioPublicado(tipo,propietarioId))throw new RecursoNoEncontradoException("Las imágenes no están disponibles.");return (switch(tipo){case PROBLEMA->archivos.findByProblema(propietarioId);case SOLUCION->archivos.findBySolucion(propietarioId);case PASO->archivos.findByPaso(propietarioId);}).stream().map(this::response).toList();}
+    private List<ArchivoResponse> listarArchivos(Propietario tipo,Long propietarioId){
+        validarPropietario(tipo,propietarioId);
+        switch(tipo){
+            case PROBLEMA -> visibilidad.verificar(problemas.findById(propietarioId).orElseThrow());
+            case SOLUCION -> visibilidad.verificar(soluciones.findById(propietarioId).orElseThrow());
+            case PASO -> visibilidad.verificar(pasos.findById(propietarioId).orElseThrow());
+        }
+        return (switch(tipo){case PROBLEMA->archivos.findByProblema(propietarioId);case SOLUCION->archivos.findBySolucion(propietarioId);case PASO->archivos.findByPaso(propietarioId);}).stream()
+                .filter(a -> !visibilidad.soloPublicados() || a.isActivo()).map(this::response).toList();
+    }
     public ContenidoArchivo contenido(Long id) { Archivo a=buscar(id); if(!a.isActivo()||(seguridad.esLector()&&!archivoPublicado(id)))throw new RecursoNoEncontradoException("La imagen no está disponible."); try{return new ContenidoArchivo(a.getTipoMime(),a.getNombreOriginal(),Files.readAllBytes(resolverSegura(a.getRutaRelativa())));}catch(IOException ex){throw new RecursoNoEncontradoException("El contenido físico de la imagen no está disponible.");} }
     @Transactional public ArchivoResponse actualizar(Long id,String alternativo,int orden, long versionEsperada){if(alternativo==null||alternativo.isBlank()||alternativo.length()>300)throw invalido(HttpStatus.BAD_REQUEST,"TEXTO_ALTERNATIVO_INVALIDO","El texto alternativo es obligatorio.");Archivo a=buscar(id);a.verificarVersion(versionEsperada);a.actualizar(alternativo,orden);archivos.flush(); return response(a);}
     @Transactional public ArchivoResponse cambiarActivo(Long id,boolean activo, long versionEsperada){Archivo a=buscar(id);a.verificarVersion(versionEsperada);a.cambiarActivo(activo);archivos.flush(); return response(a);}
     private Archivo buscar(Long id){return archivos.findById(id).orElseThrow(()->new RecursoNoEncontradoException("No existe la imagen "+id+"."));}
     private void validarPropietario(Propietario t,Long id){boolean existe=switch(t){case PROBLEMA->problemas.existsById(id);case SOLUCION->soluciones.existsById(id);case PASO->pasos.existsById(id);};if(!existe)throw new RecursoNoEncontradoException("No existe el recurso relacionado "+id+".");}
     private void vincular(Propietario t,Long id,Long archivo){switch(t){case PROBLEMA->jdbc.update("INSERT INTO archivo_problemas (archivo_id,problema_id) VALUES (?,?)",archivo,id);case SOLUCION->jdbc.update("INSERT INTO archivo_soluciones (archivo_id,solucion_id) VALUES (?,?)",archivo,id);case PASO->jdbc.update("INSERT INTO archivo_pasos (archivo_id,paso_id) VALUES (?,?)",archivo,id);}}
-    private boolean propietarioPublicado(Propietario tipo,Long id){String sql=switch(tipo){case PROBLEMA->"SELECT COUNT(*) FROM problemas WHERE id=? AND activo=TRUE AND estado='PUBLICADO'";case SOLUCION->"SELECT COUNT(*) FROM soluciones s JOIN problemas p ON p.id=s.problema_id WHERE s.id=? AND s.activo=TRUE AND p.activo=TRUE AND p.estado='PUBLICADO'";case PASO->"SELECT COUNT(*) FROM pasos_solucion ps JOIN soluciones s ON s.id=ps.solucion_id JOIN problemas p ON p.id=s.problema_id WHERE ps.id=? AND ps.activo=TRUE AND s.activo=TRUE AND p.activo=TRUE AND p.estado='PUBLICADO'";};return jdbc.queryForObject(sql,Integer.class,id)>0;}
     private boolean archivoPublicado(Long id){String sql="SELECT COUNT(*) FROM (SELECT ap.archivo_id FROM archivo_problemas ap JOIN problemas p ON p.id=ap.problema_id WHERE p.activo=TRUE AND p.estado='PUBLICADO' UNION ALL SELECT ars.archivo_id FROM archivo_soluciones ars JOIN soluciones s ON s.id=ars.solucion_id JOIN problemas p ON p.id=s.problema_id WHERE s.activo=TRUE AND p.activo=TRUE AND p.estado='PUBLICADO' UNION ALL SELECT apa.archivo_id FROM archivo_pasos apa JOIN pasos_solucion ps ON ps.id=apa.paso_id JOIN soluciones s ON s.id=ps.solucion_id JOIN problemas p ON p.id=s.problema_id WHERE ps.activo=TRUE AND s.activo=TRUE AND p.activo=TRUE AND p.estado='PUBLICADO') visibles WHERE archivo_id=?";return jdbc.queryForObject(sql,Integer.class,id)>0;}
     private Path resolverSegura(String relativa){Path p=raiz.resolve(relativa).normalize();if(!p.startsWith(raiz))throw new SecurityException("Ruta de almacenamiento inválida.");return p;}
     private String sha256(byte[] b)throws NoSuchAlgorithmException{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(b));}

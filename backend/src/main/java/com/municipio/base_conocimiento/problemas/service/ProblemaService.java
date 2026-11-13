@@ -17,6 +17,7 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.municipio.base_conocimiento.seguridad.service.SeguridadActual;
+import com.municipio.base_conocimiento.seguridad.service.VisibilidadConocimiento;
 
 @Service @Transactional(readOnly = true)
 public class ProblemaService {
@@ -24,11 +25,12 @@ public class ProblemaService {
     private final SubareaRepository subareas; private final SanitizadorHtml sanitizador;
     private final VersionProblemaRepository versiones; private final SolucionService soluciones;
     private final SeguridadActual seguridad;
+    private final VisibilidadConocimiento visibilidad;
     public ProblemaService(ProblemaRepository problemas, EtiquetaRepository etiquetas, SubareaRepository subareas,
-            SanitizadorHtml sanitizador, VersionProblemaRepository versiones, SolucionService soluciones, SeguridadActual seguridad) {
+            SanitizadorHtml sanitizador, VersionProblemaRepository versiones, SolucionService soluciones, SeguridadActual seguridad, VisibilidadConocimiento visibilidad) {
         this.problemas=problemas; this.etiquetas=etiquetas; this.subareas=subareas; this.sanitizador=sanitizador;
         this.versiones=versiones; this.soluciones=soluciones;
-        this.seguridad=seguridad;
+        this.seguridad=seguridad;this.visibilidad=visibilidad;
     }
     public Page<ProblemaResponse> listar(Long subareaId, Boolean activo, Pageable p) {
         Page<Problema> pagina = seguridad.esLector() ? (subareaId==null?problemas.findByEstadoAndActivo(EstadoProblema.PUBLICADO,true,p):problemas.findBySubareaIdAndEstadoAndActivo(subareaId,EstadoProblema.PUBLICADO,true,p))
@@ -37,7 +39,7 @@ public class ProblemaService {
                 : activo != null ? problemas.findByActivo(activo,p) : problemas.findAll(p);
         return pagina.map(this::response);
     }
-    public ProblemaDetalleResponse obtener(Long id) { Problema p=buscar(id);if(seguridad.esLector()&&(!p.isActivo()||p.getEstado()!=EstadoProblema.PUBLICADO))throw new RecursoNoEncontradoException("No existe el problema "+id+".");return new ProblemaDetalleResponse(response(p), soluciones.listar(id)); }
+    public ProblemaDetalleResponse obtener(Long id) { Problema p=buscar(id);visibilidad.verificar(p);return new ProblemaDetalleResponse(response(p), soluciones.listar(id)); }
     public List<String> listarEtiquetas(){return etiquetas.findByActivoTrueOrderByNombreAsc().stream().map(Etiqueta::getNombre).toList();}
     @Transactional public ProblemaResponse crear(ProblemaRequest r) {
         Subarea s=buscarSubareaActiva(r.subareaId()); String html=sanitizador.limpiar(r.descripcionHtml());

@@ -1,5 +1,9 @@
-import { Box, Button, Stack, TextField, Typography } from '@mui/material'
-import { AttachFile } from '@mui/icons-material'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import AttachFile from '@mui/icons-material/AttachFile'
 
 const MAX_SIZE = 10 * 1024 * 1024
 export const asAttachments = files => Array.from(files).map(file => ({ file, name: file.name.replace(/\.[^.]+$/, '') || file.name }))

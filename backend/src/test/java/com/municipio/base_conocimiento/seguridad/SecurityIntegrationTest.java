@@ -6,6 +6,7 @@ import tools.jackson.databind.JsonNode;import tools.jackson.databind.ObjectMappe
 import org.junit.jupiter.api.*;import org.springframework.beans.factory.annotation.Autowired;import org.springframework.boot.test.context.SpringBootTest;import org.springframework.http.MediaType;import org.springframework.security.web.FilterChainProxy;import org.springframework.test.context.ActiveProfiles;import org.springframework.test.web.servlet.MockMvc;import org.springframework.test.web.servlet.setup.MockMvcBuilders;import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest(properties="app.storage.path=target/security-test-storage") @ActiveProfiles("securitytest")
+@org.springframework.transaction.annotation.Transactional
 class SecurityIntegrationTest{
  MockMvc mvc;@Autowired ObjectMapper json;@Autowired WebApplicationContext context;@Autowired FilterChainProxy filters;
  @BeforeEach void setup(){mvc=MockMvcBuilders.webAppContextSetup(context).addFilters(filters).build();}

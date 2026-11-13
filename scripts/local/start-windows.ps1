@@ -16,7 +16,10 @@ $env:STORAGE_PATH = Join-Path $localRoot 'storage'
 $env:SERVER_ADDRESS = '127.0.0.1'
 $env:CORS_ALLOWED_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173'
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
-    $jar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
+    $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
+    $jar = Join-Path $localRoot 'backend.jar'
+    if (Test-Path $sourceJar) { Copy-Item -LiteralPath $sourceJar -Destination $jar -Force }
+    if (!(Test-Path $jar)) { throw 'Falta el JAR del backend. Compilar antes de iniciar.' }
     $backendProcess = Start-Process -FilePath "$($config.javaHome)\bin\java.exe" -ArgumentList @('-jar', ('"' + $jar + '"')) -WorkingDirectory "$projectRoot\backend" -WindowStyle Hidden -RedirectStandardOutput "$localRoot\backend.log" -RedirectStandardError "$localRoot\backend-error.log" -PassThru
     $backendProcess.Id | Set-Content "$localRoot\backend.pid"
 }

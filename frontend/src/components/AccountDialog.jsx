@@ -1,5 +1,14 @@
 import { useEffect,useState } from 'react'
-import { Alert,Button,Dialog,DialogActions,DialogContent,DialogTitle,Divider,Stack,TextField,Typography } from '@mui/material'
+import Alert from '@mui/material/Alert'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import Divider from '@mui/material/Divider'
+import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { useAuth } from '../auth/AuthContext.jsx'
 
 export default function AccountDialog({open,onClose,required=false}){

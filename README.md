@@ -13,8 +13,11 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Prompt y requerimientos originales](docs/PROMPT_Y_REQUERIMIENTOS.md)
 - [Etapas, despliegue local y pruebas](docs/ETAPAS_DESPLIEGUE_Y_PRUEBAS.md)
 - [Concurrencia, versiones y pruebas PostgreSQL](docs/CONCURRENCIA.md)
+- [Pruebas y permisos para IA local](docs/PRUEBAS_IA.md)
 
-Cada etapa debe terminar con pruebas automatizadas y **más del 90 % de cobertura**. El umbral operativo será 91 % y deberá validarse automáticamente en el proceso de construcción.
+Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
+el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
+El alcance de la medición del frontend está explicado en la guía de pruebas.
 
 ## Estado actual
 
@@ -22,6 +25,11 @@ Actualizado el 12/11/2026. Las etapas 1 a 4 están implementadas. El esquema
 incluye migraciones V1 a V10; la búsqueda de texto completo de la etapa 5 sigue
 pendiente. Actualmente el árbol se filtra por área, subárea, título y etiquetas
 en el navegador. Todavía no hay un chatbot implementado.
+
+La etapa 1 de preparación para IA local corrige la visibilidad de soluciones,
+pasos e imágenes para lectores y conserva el acceso de edición al historial.
+Se verificó con 39 pruebas backend y 56 frontend. Consultar
+[PRUEBAS_IA.md](docs/PRUEBAS_IA.md) para resultados, cobertura y comandos.
 
 La Etapa 1 incluye:
 
@@ -113,7 +121,7 @@ cd backend
 .\mvnw.cmd clean verify
 ```
 
-El build exige al menos 91 % de cobertura de líneas. El reporte se genera en `backend/target/site/jacoco/index.html`.
+El build exige al menos 92 % de cobertura de líneas. El reporte se genera en `backend/target/site/jacoco/index.html`.
 
 ## Ejecutar el frontend (Etapa 3)
 
@@ -136,7 +144,7 @@ npm run test:coverage
 npm run build
 ```
 
-Vitest exige 91 % de líneas, sentencias y funciones y 80 % de ramas en los
+Vitest exige 92 % de líneas, sentencias y funciones y 80 % de ramas en los
 módulos API, hooks y utilidades incluidos en `frontend/vite.config.js`. Genera
 el reporte en `frontend/coverage/index.html`. También hay pruebas de componentes;
 el porcentaje medido no representa la cobertura de toda la interfaz. Ejecutar

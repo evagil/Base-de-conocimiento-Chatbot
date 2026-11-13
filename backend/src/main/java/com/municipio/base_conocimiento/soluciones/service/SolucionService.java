@@ -10,6 +10,7 @@ import com.municipio.base_conocimiento.problemas.repository.ProblemaRepository;
 import com.municipio.base_conocimiento.soluciones.dto.*;
 import com.municipio.base_conocimiento.soluciones.entity.*;
 import com.municipio.base_conocimiento.soluciones.repository.*;
+import com.municipio.base_conocimiento.seguridad.service.VisibilidadConocimiento;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,13 +20,21 @@ public class SolucionService {
     private final SolucionRepository soluciones; private final PasoSolucionRepository pasos;
     private final ProblemaRepository problemas; private final SanitizadorHtml sanitizador;
     private final VersionSolucionRepository versiones;
+    private final VisibilidadConocimiento visibilidad;
     public SolucionService(SolucionRepository soluciones, PasoSolucionRepository pasos, ProblemaRepository problemas,
-            SanitizadorHtml sanitizador, VersionSolucionRepository versiones) {
-        this.soluciones=soluciones; this.pasos=pasos; this.problemas=problemas; this.sanitizador=sanitizador; this.versiones=versiones;
+            SanitizadorHtml sanitizador, VersionSolucionRepository versiones, VisibilidadConocimiento visibilidad) {
+        this.soluciones=soluciones; this.pasos=pasos; this.problemas=problemas; this.sanitizador=sanitizador; this.versiones=versiones; this.visibilidad=visibilidad;
     }
-    public List<SolucionResponse> listar(Long problemaId) { return soluciones.findByProblemaIdOrderByOrdenAscIdAsc(problemaId).stream().map(this::response).toList(); }
+    public List<SolucionResponse> listar(Long problemaId) {
+        Problema problema = problemas.findById(problemaId).orElseThrow(
+                () -> new RecursoNoEncontradoException("No existe el problema " + problemaId + "."));
+        visibilidad.verificar(problema);
+        return soluciones.findByProblemaIdOrderByOrdenAscIdAsc(problemaId).stream()
+                .filter(s -> !visibilidad.soloPublicados() || visibilidad.visible(s))
+                .map(this::response).toList();
+    }
     public boolean tieneActivas(Long problemaId) { return soluciones.existsByProblemaIdAndActivoTrue(problemaId); }
-    public SolucionResponse obtener(Long id) { return response(buscar(id)); }
+    public SolucionResponse obtener(Long id) { Solucion solucion=buscar(id);visibilidad.verificar(solucion);return response(solucion); }
     @Transactional public SolucionResponse crear(Long problemaId, SolucionRequest r) {
         Problema p=problemas.bloquearPorId(problemaId).orElseThrow(()->new RecursoNoEncontradoException("No existe el problema "+problemaId+"."));
         validarProblemaActivo(p);
@@ -69,6 +78,6 @@ public class SolucionService {
     private void validarOrden(Long solucionId,int orden,Long id) { boolean existe=id==null?pasos.existsBySolucionIdAndOrden(solucionId,orden):pasos.existsBySolucionIdAndOrdenAndIdNot(solucionId,orden,id); if(existe)throw new ConflictoException("ORDEN_DUPLICADO","Ya existe un paso con ese orden."); }
     private String limpiarValido(String valor) { String html=sanitizador.limpiar(valor); if(sanitizador.extraerTexto(html).isBlank())throw new ConflictoException("CONTENIDO_VACIO","El contenido no puede quedar vacío después de sanitizarlo."); return html; }
     private String snapshot(Solucion s) { return "titulo="+s.getTitulo()+"\nprincipal="+s.isPrincipal()+"\norden="+s.getOrden()+"\nhtml="+s.getDescripcionHtml(); }
-    private SolucionResponse response(Solucion s) { return new SolucionResponse(s.getId(),s.getProblema().getId(),s.getTitulo(),s.getDescripcionHtml(),s.isPrincipal(),s.getOrden(),s.isActivo(),pasos.findBySolucionIdOrderByOrdenAsc(s.getId()).stream().map(this::pasoResponse).toList(),s.getCreadoEn(),s.getModificadoEn(),s.getVersion()); }
+    private SolucionResponse response(Solucion s) { return new SolucionResponse(s.getId(),s.getProblema().getId(),s.getTitulo(),s.getDescripcionHtml(),s.isPrincipal(),s.getOrden(),s.isActivo(),pasos.findBySolucionIdOrderByOrdenAsc(s.getId()).stream().filter(p -> !visibilidad.soloPublicados() || visibilidad.visible(p)).map(this::pasoResponse).toList(),s.getCreadoEn(),s.getModificadoEn(),s.getVersion()); }
     private PasoResponse pasoResponse(PasoSolucion p) { return new PasoResponse(p.getId(),p.getTitulo(),p.getContenidoHtml(),p.getOrden(),p.isActivo(),p.getVersion()); }
 }

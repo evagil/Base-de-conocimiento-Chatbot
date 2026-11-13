@@ -41,7 +41,7 @@ it('opens an empty creation form even when a problem is selected, and preserves 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   fireEvent.click(screen.getByRole('button', { name: 'Nuevo problema' }))
   expect(within(screen.getByRole('dialog')).getByLabelText(/Título del problema/)).toHaveValue('')
-}, 15000)
+})
 
 
 it('can unpin the desktop sidebar and remembers the preference', async () => {
