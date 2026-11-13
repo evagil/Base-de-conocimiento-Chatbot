@@ -1,6 +1,10 @@
 spring:
   application:
     name: base-conocimiento
+  task:
+    scheduling:
+      pool:
+        size: 2
   profiles:
     default: dev
   datasource:
@@ -38,6 +42,17 @@ server:
     include-stacktrace: never
 
 app:
+  indice:
+    habilitado: ${RAG_INDEX_ENABLED:false}
+    embeddings: ${RAG_EMBEDDINGS_ENABLED:false}
+    tamano-fragmento: ${RAG_CHUNK_SIZE:600}
+    solapamiento: ${RAG_CHUNK_OVERLAP:80}
+    max-fragmentos: ${RAG_MAX_CHUNKS:128}
+    max-fuentes: ${RAG_MAX_SOURCES:100}
+    max-adjuntos: ${RAG_MAX_ATTACHMENTS:3}
+    timeout: ${RAG_INDEX_TIMEOUT:120s}
+    intervalo: ${RAG_INDEX_INTERVAL:15000}
+    inicio: ${RAG_INDEX_INITIAL_DELAY:30000}
   documentos:
     habilitada: ${DOCUMENTS_ENABLED:false}
     temporales: ${DOCUMENT_TEMP_PATH:../.local/documentos-temporales}

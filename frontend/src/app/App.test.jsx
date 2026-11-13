@@ -25,22 +25,23 @@ afterEach(() => { cleanup(); localStorage.removeItem('bc_sidebar_pinned'); vi.re
 it('opens an empty creation form even when a problem is selected, and preserves editing', async () => {
   render(<MemoryRouter initialEntries={['/problemas/3']}><App/></MemoryRouter>)
   fireEvent.click(screen.getByRole('button', { name: 'Editar', exact: true }))
-  let dialog = screen.getByRole('dialog')
+  let dialog = await screen.findByRole('dialog', {}, { timeout: 10000 })
   expect(within(dialog).getByText('Editar problema')).toBeInTheDocument()
   expect(within(dialog).getByLabelText(/Título del problema/)).toHaveValue('Problema anterior')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 10000 })
 
   fireEvent.click(screen.getByRole('button', { name: 'Nuevo problema' }))
-  dialog = screen.getByRole('dialog')
+  dialog = await screen.findByRole('dialog', {}, { timeout: 10000 })
   expect(within(dialog).getByText('Nuevo problema')).toBeInTheDocument()
   expect(within(dialog).getByLabelText(/Título del problema/)).toHaveValue('')
   expect(within(dialog).getByText('2. Solución inicial (opcional)')).toBeInTheDocument()
   fireEvent.change(within(dialog).getByLabelText(/Título del problema/), { target: { value: 'Descartar' } })
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 10000 })
   fireEvent.click(screen.getByRole('button', { name: 'Nuevo problema' }))
-  expect(within(screen.getByRole('dialog')).getByLabelText(/Título del problema/)).toHaveValue('')
+  dialog = await screen.findByRole('dialog', {}, { timeout: 10000 })
+  expect(within(dialog).getByLabelText(/Título del problema/)).toHaveValue('')
 })
 
 

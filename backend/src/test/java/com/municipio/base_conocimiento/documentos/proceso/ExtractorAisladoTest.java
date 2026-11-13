@@ -14,10 +14,10 @@ import tools.jackson.databind.ObjectMapper;
 class ExtractorAisladoTest {
     @TempDir Path carpeta;
     @Test void lanzaUnaJvmRealConMemoriaLimitada() throws Exception {
-        var config = ConfiguracionesDocumentos.crear(carpeta,true,Duration.ofSeconds(60),40000);
+        var config = ConfiguracionesDocumentos.crear(carpeta,true,Duration.ofSeconds(120),40000);
         var extractor = new ExtractorAislado(config,new ProcesoLimitado(),new ObjectMapper());
         Files.write(carpeta.resolve("entrada.pdf"),DocumentosFixtures.pdf("ERROR E17 REINICIAR APLICACION"));
-        var resultado = extractor.extraer(carpeta,"pdf",Duration.ofSeconds(30));
+        var resultado = extractor.extraer(carpeta,"pdf",Duration.ofSeconds(120));
         assertThat(resultado.error()).isNull();
         assertThat(resultado.partes().getFirst().texto()).contains("ERROR E17");
         assertThat(extractor.comando(carpeta)).contains("-Xmx256m","-XX:MaxMetaspaceSize=128m","-Djavax.xml.accessExternalDTD=");

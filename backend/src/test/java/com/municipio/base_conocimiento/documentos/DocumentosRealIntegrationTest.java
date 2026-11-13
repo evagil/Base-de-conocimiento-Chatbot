@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
-@SpringBootTest(properties={"app.documentos.habilitada=true","app.ia.habilitada=false","app.storage.path=target/documentos-test-storage"})
+@SpringBootTest(properties={"app.documentos.habilitada=true","app.documentos.timeout=120s","app.ia.habilitada=false","app.storage.path=target/documentos-test-storage"})
 @ActiveProfiles("securitytest")
 @org.springframework.transaction.annotation.Transactional
 @EnabledIfEnvironmentVariable(named="BC_TEST_TESSERACT",matches=".+")

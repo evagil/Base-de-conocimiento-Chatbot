@@ -282,3 +282,96 @@ Los primeros intentos se conservan únicamente en logs locales `*-primer-intento
 El ensayo manual del JAR conserva un PDF sintético, su configuración y resultado
 en `.local/documentos-jar-smoke/`; no contiene documentos del respaldo. Los
 trabajos transitorios de la integración HTTP sí quedaron eliminados.
+
+## Etapa 4: índice derivado de conocimiento
+
+Las pruebas de `rag/` cubren normalización Unicode, fragmentos acotados y
+solapamiento, metadatos, etiquetas, soluciones y pasos, cambios de contenido,
+exclusión de registros inactivos y no publicados, renombrado de padres,
+extracción de adjuntos con referencias de página y permisos de lectura vigentes.
+También prueban vectores inválidos, límites, exclusión mutua mediante lease,
+reconstrucción que invalida trabajo antiguo, cambios durante inferencia, fallos
+con reintentos limitados, recuperación administrativa y modo textual sin Ollama.
+
+`IndiceIntegrationTest` usa H2 independiente y dobles de Ollama y extracción;
+`LectorAdjuntoIndiceTest` verifica límites de lectura, confinamiento al storage,
+hash y contrato de entrada al procesador documental sin modificar el original.
+Los endpoints administrativos se verifican con MockMvc y la matriz JWT existente.
+
+`IndicePostgresTest` se habilita con `BC_TEST_DB_URL`. Crea un esquema efímero
+aleatorio en la instancia de pruebas, aplica primero V1–V10, inserta conocimiento
+sintético y migra a V11/V12 comprobando que se conserva. Verifica GIN español,
+vista de fuentes vigentes, rollback de publicación y lease compartido. Al cerrar
+elimina únicamente ese esquema generado, nunca el esquema público.
+
+`EmbeddingsLocalSmokeTest` se habilita con `BC_TEST_OLLAMA_URL`, igual que la
+prueba de conversación anterior. Llama a `embeddinggemma:300m` con dos textos
+sintéticos y verifica vectores finitos de 768 dimensiones. No es una evaluación
+de precisión de recuperación: esa medición corresponde a la etapa 5.
+
+Para ejecutar todas las comprobaciones usar el comando completo de la etapa 3
+con sus tres variables BC_TEST. Abrir Ollama y verificar antes que estén instalados
+`granite4.2:3b` y `embeddinggemma:300m`. Las pruebas no descargan modelos ni usan
+documentos del respaldo. Ejecutar después los tres comandos del frontend por
+separado para limitar el uso de RAM.
+
+Logs locales de esta etapa: `.local/indice-backend-verify.log`,
+`.local/indice-unit.log`, `.local/indice-frontend-lint.log`,
+`.local/indice-frontend-coverage.log` y `.local/indice-frontend-build.log`.
+
+Las pruebas positivas que inician una JVM documental real usan hasta 120 s para
+absorber el arranque en frío y la instrumentación en equipos con disco y RAM
+limitados. La aplicación conserva su valor predeterminado de 60 s. Las pruebas
+negativas de timeout siguen usando presupuestos cortos y verifican la terminación
+del proceso; no se desactiva ningún límite ni se reduce cobertura.
+
+### Resultados de la etapa 4, 13/11/2026
+
+- `mvn clean verify` aprobado: 103 pruebas, sin fallos, errores ni omisiones.
+  Incluye 16 pruebas nuevas del módulo RAG, los once casos anteriores de
+  concurrencia PostgreSQL, OCR real y ambas comprobaciones nativas de Ollama.
+- JaCoCo: 1274/1322 líneas (96,37 %) y 903/1046 ramas (86,33 %). Se mantuvo
+  el umbral de 92 % y no se excluyeron clases para elevar la cobertura.
+- La prueba PostgreSQL del índice conservó el conocimiento de una base en V10
+  al migrar a V11/V12, verificó GIN español, rollback, vista vigente y lease.
+  Se corrigió el tipado explícito `CAST(NULL AS BIGINT)` de relaciones opcionales
+  en el UNION de adjuntos, detectado por PostgreSQL y no por H2.
+- Las nueve pruebas de integración del indexador pasaron con sus controles de
+  cambios, bajas, límites, vectores inválidos, fallos y reintentos.
+- `embeddinggemma:300m` produjo vectores de 768 dimensiones para dos textos
+  sintéticos en 28,82 s. `granite4.2:3b` respondió 21 tokens en 93,20 s.
+  Son mediciones con instrumentación y carga del escritorio, no una promesa
+  de latencia ni una evaluación de precisión del futuro RAG.
+- La corrida final duró aproximadamente 24 minutos y detuvo la instancia
+  PostgreSQL de pruebas al terminar. La base restaurada no se usó en los tests.
+- Frontend: 14 archivos y 56 pruebas aprobadas. Cobertura del alcance configurado:
+  líneas 100 % (117/117), sentencias 96,42 %, funciones 94,89 % y ramas 93,24 %.
+  Se ejecutó por separado con un trabajador y heap Node de 1536 MiB; la corrida
+  final duró unos nueve minutos en este equipo.
+- ESLint sin errores y con tres advertencias preexistentes de Fast Refresh;
+  compilación de producción aprobada. Continúa la advertencia del tamaño del
+  bundle y los avisos previos de componentes/extensiones en el entorno de tests.
+- Entorno Windows actualizado con el JAR verificado por SHA-256. Flyway aplicó
+  V11/V12 sobre la instancia local, después de crear y comprobar el catálogo del
+  respaldo privado `.local/pre-indice-20261113_162031.dump`.
+- Frontend HTTP 200; `/api/auth/me` y `/api/ia/indice` sin token devuelven 401.
+  Se confirmó la generación efectiva de fragmentos y vectores locales de 768
+  dimensiones con `embeddinggemma:300m`. La primera comprobación no registró
+  fallos del índice. El barrido inicial continúa en segundo plano: no se afirma
+  que todo el catálogo esté procesado al iniciar la aplicación.
+
+La primera corrida completa registró dos timeouts de pruebas positivas que
+inician JVM y fallos de restricciones en una base H2 compartida, además del UNION
+de PostgreSQL. Se ajustaron solo los presupuestos positivos de las pruebas nativas,
+se dio una base H2 propia a la matriz de seguridad y se corrigió el SQL. La
+verificación final completa pasó con los resultados indicados arriba. La evidencia
+inicial queda en `.local/indice-backend-primer-intento.log` y la comprobación
+aislada de seguridad en `.local/indice-seguridad.log`.
+
+La primera corrida del frontend se interrumpió tras un fallo intermitente del
+flujo de edición/creación. El caso pasó aislado con y sin instrumentación; se
+hicieron explícitas las esperas de apertura y cierre de diálogos en `App.test.jsx`,
+conservando las mismas comprobaciones. Después se repitieron lint, las 56 pruebas
+con cobertura completa y build satisfactoriamente. Los diagnósticos de un único
+caso no representan la cobertura global; sus omisiones intencionales y cobertura
+parcial no forman parte del resultado final. No se cambiaron los umbrales.

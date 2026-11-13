@@ -6,9 +6,10 @@ El backend Java incorpora clientes de conversación y embeddings, una operación
 de diagnóstico y configuración opcional. Se mantiene el monolito modular; no
 se agregaron dependencias Maven, servicios Python ni frameworks de agentes.
 
-Las pantallas de chatbot y agente, OCR, extracción documental, RAG e indexación
-corresponden a etapas posteriores. El cliente todavía no consulta ni modifica
-el conocimiento almacenado. Las pruebas reales usan únicamente texto sintético.
+Las pantallas de chatbot y agente y la recuperación RAG corresponden a etapas
+posteriores. La extracción documental de la etapa 3 y el índice de la etapa 4
+se describen al final de esta guía. El cliente HTTP no modifica el conocimiento
+almacenado. Las pruebas reales de modelos usan únicamente texto sintético.
 
 ## Arquitectura
 
@@ -40,9 +41,9 @@ Los modelos de conversación y agente se configuran inicialmente como
 [INSTALACION_MODELOS.md](INSTALACION_MODELOS.md). El modelo visual queda reservado
 para una evaluación posterior; la etapa 2 no recibe imágenes.
 
-`embeddinggemma:300m` es el candidato configurado para embeddings. No está
-instalado en esta computadora y no se descargó durante la etapa. El cliente se
-verifica con vectores simulados hasta preparar el índice RAG.
+`embeddinggemma:300m` es el modelo configurado para embeddings. En la etapa 2
+se verificó mediante vectores simulados; se instaló localmente al preparar
+el índice en la etapa 4. Los tests normales siguen utilizando dobles de prueba.
 
 ## Habilitar en Windows
 
@@ -86,7 +87,7 @@ terminal: Spring Boot no carga automáticamente ese archivo. El valor por defect
 | `OLLAMA_CHAT_MODEL` | `granite4.2:3b` | Conversación |
 | `OLLAMA_AGENT_MODEL` | `granite4.2:3b` | Modelo propuesto para el agente |
 | `OLLAMA_VISION_MODEL` | `qwen2.5vl:3b` | Reservado; no instalado ni utilizado |
-| `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma:300m` | Candidato; pendiente de instalar |
+| `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma:300m` | Embeddings locales; instalado en etapa 4 |
 | `OLLAMA_TIMEOUT` | `120s` | Presupuesto total por operación, máximo 180 s |
 | `OLLAMA_CONNECT_TIMEOUT` | `2s` | Conexión, máximo 10 s |
 | `OLLAMA_CONTEXT_TOKENS` | `2048` | Contexto; rango 512–4096 |
@@ -140,8 +141,10 @@ El límite de concurrencia corresponde a este backend; otros programas pueden
 utilizar el mismo servidor Ollama independientemente.
 
 Los errores públicos no incluyen el cuerpo remoto ni el prompt. El campo
-`thinking` de Ollama no se expone en los DTO de respuesta. No se guardan prompts,
-documentos o respuestas en la base durante esta etapa. El agente de la etapa 7
+`thinking` de Ollama no se expone en los DTO de respuesta. El cliente no guarda
+prompts ni respuestas generadas en la base. El índice de la etapa 4 sí conserva
+texto derivado del conocimiento existente y sus metadatos; los archivos de una
+consulta temporal no se publican automáticamente. El agente de la etapa 7
 será exclusivamente textual y no generará tickets ni modificará conocimiento.
 
 La configuración y la evaluación de modelos existentes sustituyen el entrenamiento
@@ -166,3 +169,17 @@ variables de `.local/ia-config.json`. Los archivos extraídos se eliminan y no
 se agregan al conocimiento automáticamente. La nueva API todavía no tiene una
 pantalla propia. Contrato, instalación, privacidad y limitaciones en
 [CHATBOT_MULTIMODAL.md](CHATBOT_MULTIMODAL.md).
+
+## Indexación: etapa 4
+
+El módulo `rag` prepara fragmentos derivados de fuentes publicadas y activas.
+`RAG_INDEX_ENABLED` controla el barrido en segundo plano y `RAG_EMBEDDINGS_ENABLED`
+habilita la vectorización local. Son opciones separadas de `IA_ENABLED`, que
+debe estar activo para llamadas reales a Ollama. No hay inferencia durante
+el guardado normal de problemas, soluciones, pasos o adjuntos.
+
+El lanzador Windows admite `.local/indice-config.json`. Los administradores
+pueden consultar `/api/ia/indice` y solicitar reconstrucción o reintento. La vista
+de fuentes vigentes controla publicación, actividad y versiones antes de la
+recuperación futura. Ver [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md) para límites,
+consistencia eventual, estados de error, migraciones y reversión.

@@ -222,8 +222,9 @@ todos los manuales ni ausencia de contenido malicioso. En las próximas etapas
 el texto documental se tratará como datos no confiables, nunca como instrucciones.
 No se deben usar documentos ajenos sin autorización ni distribuir datos privados.
 
-Esta etapa cubre preparación de datos y evaluación de factibilidad. Las etapas
-4 y 5 agregarán índice y recuperación con fuentes; la 6 integrará el chatbot y
+Esta etapa cubre preparación de datos y evaluación de factibilidad. La etapa 4
+agrega el índice descrito en [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md); la 5
+agregará recuperación con fuentes, la 6 integrará el chatbot y
 la 7 el agente textual de solo lectura. El agente no procesará imágenes, no
 creará tickets y no modificará la base. Despliegue, monitoreo y evaluación
 integral continúan en la etapa 8; no se entrenan modelos desde cero.

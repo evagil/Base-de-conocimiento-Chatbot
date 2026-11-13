@@ -17,6 +17,7 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Conexión con Ollama y configuración de IA local](docs/IA_LOCAL.md)
 - [Hardware, selección y evaluación de modelos](docs/INSTALACION_MODELOS.md)
 - [Extracción local de PDF, DOCX y JPG: etapa 3 de IA](docs/CHATBOT_MULTIMODAL.md)
+- [Índice incremental y preparación del RAG: etapa 4 de IA](docs/ARQUITECTURA_RAG.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -25,7 +26,7 @@ El alcance de la medición del frontend está explicado en la guía de pruebas.
 ## Estado actual
 
 Actualizado el 13/11/2026. Las etapas originales 1 a 4 están implementadas. El esquema
-incluye migraciones V1 a V10; la búsqueda de texto completo de la etapa 5 sigue
+incluye migraciones V1 a V12 en PostgreSQL; la búsqueda de texto completo de la etapa 5 sigue
 pendiente. Actualmente el árbol se filtra por área, subárea, título y etiquetas
 en el navegador. Todavía no hay un chatbot implementado.
 
@@ -40,9 +41,9 @@ El modelo de conversación seleccionado es **`granite4.2:3b`, ejecutado localmen
 con Ollama**. También queda configurado como candidato del agente, cuya selección
 de herramientas requiere validación adicional en la etapa 7. El cliente acepta
 solo conexiones locales y rechaza modelos remotos; no envía consultas a servicios
-externos de IA. No se descargaron modelos durante esta integración.
+externos de IA. No se descargaron modelos durante la etapa 2.
 
-El candidato de embeddings es `embeddinggemma:300m`, pendiente de instalar.
+El modelo local de embeddings es `embeddinggemma:300m`, instalado en la etapa 4.
 `qwen2.5vl:3b` queda reservado para visión opcional, sin instalar ni utilizar.
 El chatbot recibirá documentos e imágenes en su etapa de interfaz; el agente
 será exclusivamente textual, no analizará imágenes ni generará tickets.
@@ -50,9 +51,17 @@ será exclusivamente textual, no analizará imágenes ni generará tickets.
 La etapa 3 de IA agrega `POST /api/documentos/extraer`: extrae texto de PDF y
 DOCX y usa Tesseract local para JPG/JPEG y páginas PDF escaneadas. El endpoint
 requiere sesión, aplica límites y elimina los archivos temporales; no guarda
-conocimiento ni utiliza servicios externos. La pantalla del chatbot, el índice
+conocimiento ni utiliza servicios externos. La pantalla del chatbot
 y las respuestas con RAG continúan pendientes. Ver [la guía de extracción](docs/CHATBOT_MULTIMODAL.md)
 para activar la función, instalar OCR y consultar sus limitaciones.
+
+La etapa 4 agrega un índice derivado de conocimiento publicado y activo, con
+fragmentos, metadatos, páginas y embeddings opcionales. Se actualiza mediante
+un barrido en segundo plano, registra fallos y permite reconstrucción y reintentos
+administrativos. No cambia las transacciones del guardado normal. Esta instalación
+usa texto completo nativo de PostgreSQL y vectores JSON portables porque no tiene
+pgvector. La recuperación híbrida y las respuestas RAG corresponden a la etapa 5;
+ver [ARQUITECTURA_RAG.md](docs/ARQUITECTURA_RAG.md).
 
 La Etapa 1 incluye:
 

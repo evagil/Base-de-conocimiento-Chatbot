@@ -36,6 +36,7 @@ Los datos persistentes y la configuración local están en `.local/`:
 - `storage/`: copia de imágenes y documentos del respaldo.
 - `windows-config.json`: contraseña técnica y secreto JWT; no compartir.
 - `ia-config.json`: configuración opcional de Ollama, descrita en [IA_LOCAL.md](IA_LOCAL.md).
+- `indice-config.json`: habilitación y límites del índice de conocimiento, descritos en [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md).
 - `documentos-config.json`: habilitación, rutas y límites de extracción documental.
 - `tools/tesseract/`: OCR portable con español e inglés, preparado para esta computadora.
 - `documentos-temporales/`: trabajos de extracción privados, eliminados al finalizar.
@@ -130,6 +131,23 @@ Para verificar el OCR preparado, desde la raíz:
 La lista debe incluir `spa` y `eng`. Para desactivar esta API, cambiar
 `DOCUMENTS_ENABLED` a `false` en el JSON local y reiniciar. No es necesario
 modificar ni restaurar la base de conocimientos.
+
+## Índice de conocimiento para RAG
+
+La etapa 4 incorpora las migraciones V11/V12 y un barrido en segundo plano de
+fuentes publicadas y activas. La instalación local dispone de `embeddinggemma:300m`
+y `.local/indice-config.json` habilita índice y embeddings. Ollama debe estar
+abierto. La interfaz de chat y la búsqueda híbrida corresponden a etapas posteriores.
+
+El índice inicial puede tardar según el catálogo, los adjuntos y la carga del
+equipo. No bloquea el guardado normal. Un administrador puede consultar
+`GET /api/ia/indice` con su token y solicitar reconstrucción o reintento; la guía
+[ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md) explica contadores, límites y errores.
+Antes de aplicar las nuevas migraciones se guardó una copia privada en
+`.local/pre-indice-20261113_162031.dump`; el respaldo externo sigue intacto.
+
+Para desactivar el barrido, cambiar `RAG_INDEX_ENABLED` a `false` en el JSON
+local y reiniciar el backend. No borrar ni editar migraciones ya aplicadas.
 
 Al iniciar el backend se copia el JAR compilado de `backend/target` a
 `.local/backend.jar`. Si se ejecuta `clean`, el backend conserva esa copia.

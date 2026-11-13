@@ -39,6 +39,17 @@ if (Test-Path $documentConfigPath) {
         [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
     }
 }
+$indexConfigPath = Join-Path $localRoot 'indice-config.json'
+if (Test-Path $indexConfigPath) {
+    $indexConfig = Get-Content -LiteralPath $indexConfigPath -Raw | ConvertFrom-Json
+    $indexVariables = @('RAG_INDEX_ENABLED', 'RAG_EMBEDDINGS_ENABLED', 'RAG_CHUNK_SIZE', 'RAG_CHUNK_OVERLAP',
+        'RAG_MAX_CHUNKS', 'RAG_MAX_SOURCES', 'RAG_MAX_ATTACHMENTS', 'RAG_INDEX_TIMEOUT',
+        'RAG_INDEX_INTERVAL', 'RAG_INDEX_INITIAL_DELAY')
+    foreach ($property in $indexConfig.PSObject.Properties) {
+        if ($property.Name -notin $indexVariables) { throw "Variable de indexación no admitida: $($property.Name)" }
+        [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
+    }
+}
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
     $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
     $jar = Join-Path $localRoot 'backend.jar'

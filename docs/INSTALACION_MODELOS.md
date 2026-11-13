@@ -80,16 +80,29 @@ cargados en memoria. Para iniciar el servidor, abrir la aplicación de escritori
 o ejecutar `ollama serve`. Ver las opciones de memoria y contexto en la
 [documentación oficial](https://docs.ollama.com/faq).
 
-## Modelos pendientes
+## Instalación posterior: etapa 4
 
-- Embeddings: `embeddinggemma:300m`, candidato de unos 622 MB según su
-  [ficha oficial](https://ollama.com/library/embeddinggemma). Se verificará al
-  preparar la indexación; las pruebas normales usan vectores simulados.
+- Embeddings: `embeddinggemma:300m`, de unos 622 MB según su
+  [ficha oficial](https://ollama.com/library/embeddinggemma), instalado localmente
+  el 13/11/2026 para el índice. Las pruebas normales usan vectores simulados;
+  la prueba optativa de la etapa 4 utiliza el cliente Java y texto sintético.
 - Visión opcional: `qwen2.5vl:3b`, sin instalar. Su evaluación debe considerar
   el margen de RAM y la descarga antes de habilitarla.
 
-No ejecutar descargas para completar esta etapa. La instalación de nuevos pesos
-se hará como una tarea explícita en la etapa que los necesite. Las futuras
+Para reproducir la instalación de embeddings en otro equipo, con Ollama abierto:
+
+```powershell
+ollama pull embeddinggemma:300m
+ollama list
+```
+
+Este modelo genera vectores mediante `/api/embed`; no se utiliza como modelo de
+conversación. Activar por separado `RAG_INDEX_ENABLED`, `RAG_EMBEDDINGS_ENABLED`
+e `IA_ENABLED` según [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md). El indexador no
+descarga pesos automáticamente y los modelos de visión continúan sin instalar.
+
+No se descargaron pesos durante la etapa 2. La instalación del modelo de
+embeddings se realizó en la etapa 4 que lo necesita. Las futuras
 descargas requieren conexión a Internet; la generación con los modelos locales
 seleccionados se procesa en esta computadora.
 
