@@ -36,6 +36,9 @@ Los datos persistentes y la configuración local están en `.local/`:
 - `storage/`: copia de imágenes y documentos del respaldo.
 - `windows-config.json`: contraseña técnica y secreto JWT; no compartir.
 - `ia-config.json`: configuración opcional de Ollama, descrita en [IA_LOCAL.md](IA_LOCAL.md).
+- `documentos-config.json`: habilitación, rutas y límites de extracción documental.
+- `tools/tesseract/`: OCR portable con español e inglés, preparado para esta computadora.
+- `documentos-temporales/`: trabajos de extracción privados, eliminados al finalizar.
 - `backend.log`, `frontend.log` y sus archivos de errores: diagnóstico.
 - `postgres.log`: arranque y errores de la base.
 - `backend.pid` y `frontend.pid`: procesos iniciados por el script.
@@ -103,6 +106,30 @@ cd backend
 
 Luego detener e iniciar nuevamente. Los scripts de inicio no recompilan.
 La instancia local se inicia con el script; no se instaló como servicio de Windows.
+
+## Extracción de documentos para IA
+
+La etapa 3 agrega una API autenticada para PDF, DOCX y JPG/JPEG; todavía no agrega
+la pantalla de chat. El OCR utiliza Tesseract local, independientemente de Ollama.
+Ver [CHATBOT_MULTIMODAL.md](CHATBOT_MULTIMODAL.md) para el contrato HTTP, los límites
+y las instrucciones de instalación en otra computadora.
+
+El lanzador lee `.local/documentos-config.json` y admite únicamente las variables
+documentales enumeradas en `backend/.env.example`. En esta instalación las rutas
+se definen de forma absoluta para el ejecutable portable, los idiomas y la carpeta
+temporal. Reiniciar el backend después de cambiar esa configuración; ejecutar el
+lanzador sobre un backend ya iniciado no modifica su entorno.
+
+Para verificar el OCR preparado, desde la raíz:
+
+```powershell
+& .local/tools/tesseract/tesseract.exe --version
+& .local/tools/tesseract/tesseract.exe --list-langs
+```
+
+La lista debe incluir `spa` y `eng`. Para desactivar esta API, cambiar
+`DOCUMENTS_ENABLED` a `false` en el JSON local y reiniciar. No es necesario
+modificar ni restaurar la base de conocimientos.
 
 Al iniciar el backend se copia el JAR compilado de `backend/target` a
 `.local/backend.jar`. Si se ejecuta `clean`, el backend conserva esa copia.

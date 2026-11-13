@@ -200,3 +200,85 @@ Logs y evidencia locales: `.local/ia-backend-verify.log`,
 Estos resultados validan la conexión y sus controles, no un agente completo ni
 la precisión final del RAG. La selección de herramientas y argumentos mantiene
 las limitaciones documentadas en [INSTALACION_MODELOS.md](INSTALACION_MODELOS.md).
+
+## Etapa 3: extracción documental y OCR
+
+Las pruebas de `documentos/` construyen archivos sintéticos: PDF con texto,
+escaneados, cifrados, vacíos y dañados; DOCX con tabla e hipervínculo externo;
+JPG/JPEG y una imagen PNG con extensión falsa. Cubren texto y páginas, límites,
+validación, errores uniformes, falta de motor OCR, concurrencia, proceso hijo,
+entorno filtrado, timeout, interrupción y limpieza de archivos temporales.
+La prueba DOCX extrae la etiqueta del hipervínculo sin consultar su dirección.
+
+La ejecución normal no requiere Tesseract. `DocumentosRealIntegrationTest` se
+habilita únicamente mediante `BC_TEST_TESSERACT`: usa JWT reales en una base H2
+aislada y verifica acceso de los tres roles, anónimo 401, extracción PDF/DOCX,
+OCR nativo de JPG y PDF escaneado, ausencia de persistencia de problemas y
+limpieza posterior a aciertos y errores. No usa usuarios ni documentos del respaldo.
+
+Para reproducir la verificación completa con PostgreSQL de pruebas, OCR preparado
+y la prueba de Ollama de la etapa anterior, desde la raíz del proyecto:
+
+```powershell
+$env:BC_TEST_TESSERACT = Join-Path $PWD '.local/tools/tesseract/tesseract.exe'
+$env:BC_TEST_TESSDATA = Join-Path $PWD '.local/tools/tesseract/tessdata'
+$env:BC_TEST_OLLAMA_URL = 'http://127.0.0.1:11434'
+try {
+    powershell -ExecutionPolicy Bypass -File backend/scripts/test-postgres-concurrency.ps1
+    if ($LASTEXITCODE -ne 0) { throw 'Falló la verificación del backend.' }
+} finally {
+    Remove-Item Env:BC_TEST_TESSERACT, Env:BC_TEST_TESSDATA, Env:BC_TEST_OLLAMA_URL -ErrorAction SilentlyContinue
+}
+```
+
+Ollama debe estar abierto y `granite4.2:3b` instalado. Las pruebas no descargan
+modelos ni instalan Tesseract. Si no se definen esas variables, las comprobaciones
+nativas optativas se omiten; los casos simulados siguen ejecutándose.
+Los umbrales de cobertura no cambian y no se excluye el nuevo código documental.
+En equipos con 8 GB conviene ejecutar backend y frontend por separado, con
+un trabajador de Vitest, para evitar que la paginación de memoria retrase las
+pruebas. No ejecutar varias compilaciones ni cargar otros modelos durante
+la comprobación de Ollama.
+
+Logs locales de esta etapa: `.local/documentos-backend-verify.log`,
+`.local/documentos-unit.log`, `.local/documentos-frontend-lint.log`,
+`.local/documentos-frontend-coverage.log` y `.local/documentos-frontend-build.log`.
+Los reportes se regeneran en `backend/target/site/jacoco/` y `frontend/coverage/`.
+Los binarios y reportes no se incluyen en Git.
+
+### Resultados de la etapa 3, 13/11/2026
+
+- Backend: `mvn clean verify` aprobado, 87 pruebas sin fallos ni omisiones.
+  Incluye las 27 pruebas documentales, los once casos PostgreSQL y la consulta
+  nativa de Ollama. No se cambiaron umbrales ni exclusiones de cobertura.
+- JaCoCo: 1102/1146 líneas (96,16 %) y 727/842 ramas (86,34 %).
+- La integración documental ejecutó OCR real con Tesseract 5.4.0.20240606 sobre
+  JPG y PDF escaneado; ambos reconocieron `E17` y `REINICIAR`. PDF y DOCX se
+  verificaron mediante la API y los tres roles accedieron a la extracción de PDF.
+- La carpeta temporal de esa integración quedó vacía. Se verificó también
+  limpieza de errores, trabajos vencidos y falta de acceso anónimo.
+- El worker del JAR Spring Boot final extrajo un PDF sintético mediante
+  `PropertiesLauncher`, además de las comprobaciones desde el classpath de tests.
+- El cliente Java consultó `granite4.2:3b`: respuesta de 21 tokens en 42,49 s.
+  La instancia PostgreSQL de pruebas se detuvo al finalizar.
+- Frontend: 14 archivos y 56 pruebas aprobadas, en unos tres minutos al ejecutar
+  por separado con un trabajador y `NODE_OPTIONS=--max-old-space-size=1536`.
+  Cobertura del alcance configurado (API, hooks y utilidades): líneas 100 %
+  (117/117), sentencias 96,42 %, funciones 94,89 % y ramas 93,24 %.
+- ESLint sin errores y con las tres advertencias preexistentes de Fast Refresh.
+  Build de producción aprobado; permanece la advertencia de bundle mayor a
+  500 kB. No se modificó código del frontend en esta etapa.
+- Entorno Windows iniciado con el JAR final verificado por SHA-256, OCR local
+  habilitado y configuración privada fuera de Git. Frontend HTTP 200;
+  `/api/auth/me` y `POST /api/documentos/extraer` sin token devuelven 401.
+  Flyway validó las diez migraciones y confirmó que no había cambios pendientes.
+
+La primera ejecución completa detectó Ollama cerrado: 86 pruebas aprobadas y
+un error de conexión en la prueba optativa. Se inició el servidor local y se
+repitió la suite completa con el resultado satisfactorio indicado arriba.
+La primera prueba del frontend se interrumpió manualmente antes de obtener
+resultados por presión de memoria; se repitió por separado después del backend.
+Los primeros intentos se conservan únicamente en logs locales `*-primer-intento.log`.
+El ensayo manual del JAR conserva un PDF sintético, su configuración y resultado
+en `.local/documentos-jar-smoke/`; no contiene documentos del respaldo. Los
+trabajos transitorios de la integración HTTP sí quedaron eliminados.

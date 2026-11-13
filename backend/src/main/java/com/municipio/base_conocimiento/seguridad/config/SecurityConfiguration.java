@@ -32,6 +32,7 @@ public class SecurityConfiguration {
             .requestMatchers("/api/usuarios/**").hasRole("ADMINISTRADOR")
             .requestMatchers("/api/auditoria/**").hasRole("ADMINISTRADOR")
             .requestMatchers("/api/ia/**").hasRole("ADMINISTRADOR")
+            .requestMatchers(HttpMethod.POST,"/api/documentos/extraer").hasAnyRole("ADMINISTRADOR","EDITOR","LECTOR")
             .requestMatchers(HttpMethod.POST,"/api/areas/**").hasRole("ADMINISTRADOR")
             .requestMatchers(HttpMethod.PUT,"/api/areas/**","/api/subareas/**").hasRole("ADMINISTRADOR")
             .requestMatchers(HttpMethod.PATCH,"/api/areas/**","/api/subareas/**").hasRole("ADMINISTRADOR")

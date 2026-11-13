@@ -16,6 +16,7 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Pruebas y permisos para IA local](docs/PRUEBAS_IA.md)
 - [Conexión con Ollama y configuración de IA local](docs/IA_LOCAL.md)
 - [Hardware, selección y evaluación de modelos](docs/INSTALACION_MODELOS.md)
+- [Extracción local de PDF, DOCX y JPG: etapa 3 de IA](docs/CHATBOT_MULTIMODAL.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -23,7 +24,7 @@ El alcance de la medición del frontend está explicado en la guía de pruebas.
 
 ## Estado actual
 
-Actualizado el 12/11/2026. Las etapas 1 a 4 están implementadas. El esquema
+Actualizado el 13/11/2026. Las etapas originales 1 a 4 están implementadas. El esquema
 incluye migraciones V1 a V10; la búsqueda de texto completo de la etapa 5 sigue
 pendiente. Actualmente el árbol se filtra por área, subárea, título y etiquetas
 en el navegador. Todavía no hay un chatbot implementado.
@@ -45,6 +46,13 @@ El candidato de embeddings es `embeddinggemma:300m`, pendiente de instalar.
 `qwen2.5vl:3b` queda reservado para visión opcional, sin instalar ni utilizar.
 El chatbot recibirá documentos e imágenes en su etapa de interfaz; el agente
 será exclusivamente textual, no analizará imágenes ni generará tickets.
+
+La etapa 3 de IA agrega `POST /api/documentos/extraer`: extrae texto de PDF y
+DOCX y usa Tesseract local para JPG/JPEG y páginas PDF escaneadas. El endpoint
+requiere sesión, aplica límites y elimina los archivos temporales; no guarda
+conocimiento ni utiliza servicios externos. La pantalla del chatbot, el índice
+y las respuestas con RAG continúan pendientes. Ver [la guía de extracción](docs/CHATBOT_MULTIMODAL.md)
+para activar la función, instalar OCR y consultar sus limitaciones.
 
 La Etapa 1 incluye:
 

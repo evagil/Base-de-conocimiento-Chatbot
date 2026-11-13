@@ -22,6 +22,9 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 11MB
+      # Evita que el contenedor escriba el upload en un temporal global antes
+      # de copiarlo al directorio privado; el límite de archivo sigue en 10 MB.
+      file-size-threshold: 11MB
   web:
     locale: es_AR
 
@@ -35,6 +38,20 @@ server:
     include-stacktrace: never
 
 app:
+  documentos:
+    habilitada: ${DOCUMENTS_ENABLED:false}
+    temporales: ${DOCUMENT_TEMP_PATH:../.local/documentos-temporales}
+    tesseract: ${TESSERACT_COMMAND:tesseract}
+    tessdata: ${TESSERACT_DATA_PATH:}
+    idiomas: ${TESSERACT_LANGUAGES:spa+eng}
+    timeout: ${DOCUMENT_TIMEOUT:60s}
+    max-archivo-bytes: ${DOCUMENT_MAX_FILE_SIZE:10485760}
+    max-paginas: ${DOCUMENT_MAX_PAGES:10}
+    max-ocr-paginas: ${DOCUMENT_MAX_OCR_PAGES:3}
+    max-caracteres: ${DOCUMENT_MAX_CHARS:40000}
+    max-pixeles: ${DOCUMENT_MAX_PIXELS:6000000}
+    max-temporal-bytes: ${DOCUMENT_MAX_TEMP_BYTES:33554432}
+    dpi: ${DOCUMENT_RENDER_DPI:120}
   ia:
     habilitada: ${IA_ENABLED:false}
     url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}

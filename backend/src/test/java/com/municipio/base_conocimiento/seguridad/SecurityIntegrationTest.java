@@ -5,19 +5,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import tools.jackson.databind.JsonNode;import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;import org.springframework.beans.factory.annotation.Autowired;import org.springframework.boot.test.context.SpringBootTest;import org.springframework.http.MediaType;import org.springframework.security.web.FilterChainProxy;import org.springframework.test.context.ActiveProfiles;import org.springframework.test.web.servlet.MockMvc;import org.springframework.test.web.servlet.setup.MockMvcBuilders;import org.springframework.web.context.WebApplicationContext;
 
-@SpringBootTest(properties="app.storage.path=target/security-test-storage") @ActiveProfiles("securitytest")
+@SpringBootTest(properties={"app.storage.path=target/security-test-storage","app.documentos.habilitada=false"}) @ActiveProfiles("securitytest")
 @org.springframework.transaction.annotation.Transactional
 class SecurityIntegrationTest{
  MockMvc mvc;@Autowired ObjectMapper json;@Autowired WebApplicationContext context;@Autowired FilterChainProxy filters;
  @BeforeEach void setup(){mvc=MockMvcBuilders.webAppContextSetup(context).addFilters(filters).build();}
  private JsonNode login(String usuario,String password)throws Exception{return json.readTree(mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"usuario\":\""+usuario+"\",\"password\":\""+password+"\"}")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());}
  @Test void autenticacionRolesRefreshAuditoria()throws Exception{
+  var documento = new org.springframework.mock.web.MockMultipartFile("archivo","manual.pdf","application/pdf",new byte[]{1});
+  mvc.perform(multipart("/api/documentos/extraer").file(documento)).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/areas")).andExpect(status().isUnauthorized());
   mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"usuario\":\"admin\",\"password\":\"incorrecta\"}")).andExpect(status().isUnauthorized());
   JsonNode admin=login("admin","Admin123!");String adminToken=admin.get("accessToken").asText();String refresh=admin.get("refreshToken").asText();
   mvc.perform(get("/api/auth/me").header("Authorization","Bearer "+adminToken)).andExpect(status().isOk()).andExpect(jsonPath("$.rol").value("ADMINISTRADOR"));
   mvc.perform(post("/api/usuarios").header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Lectora\",\"usuario\":\"lectora\",\"email\":\"lectora@municipio.local\",\"password\":\"Password123!\",\"rol\":\"LECTOR\"}")).andExpect(status().isCreated());
   JsonNode lector=login("lectora","Password123!");String lectorToken=lector.get("accessToken").asText();
+  for(String token:java.util.List.of(adminToken,lectorToken)) mvc.perform(multipart("/api/documentos/extraer").file(documento).header("Authorization","Bearer "+token))
+    .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.codigo").value("DOCUMENTOS_DESHABILITADOS"));
   mvc.perform(get("/api/areas").header("Authorization","Bearer "+lectorToken)).andExpect(status().isOk());
   mvc.perform(post("/api/areas").header("Authorization","Bearer "+lectorToken).contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Prohibida\",\"orden\":0}")).andExpect(status().isForbidden());
   mvc.perform(post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content("{\"refreshToken\":\""+refresh+"\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.accessToken").isNotEmpty());

@@ -27,6 +27,18 @@ if (Test-Path $iaConfigPath) {
         [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
     }
 }
+$documentConfigPath = Join-Path $localRoot 'documentos-config.json'
+if (Test-Path $documentConfigPath) {
+    $documentConfig = Get-Content -LiteralPath $documentConfigPath -Raw | ConvertFrom-Json
+    $documentVariables = @('DOCUMENTS_ENABLED', 'DOCUMENT_TEMP_PATH', 'DOCUMENT_TIMEOUT',
+        'DOCUMENT_MAX_FILE_SIZE', 'DOCUMENT_MAX_PAGES', 'DOCUMENT_MAX_OCR_PAGES', 'DOCUMENT_MAX_CHARS',
+        'DOCUMENT_MAX_PIXELS', 'DOCUMENT_MAX_TEMP_BYTES', 'DOCUMENT_RENDER_DPI',
+        'TESSERACT_COMMAND', 'TESSERACT_DATA_PATH', 'TESSERACT_LANGUAGES')
+    foreach ($property in $documentConfig.PSObject.Properties) {
+        if ($property.Name -notin $documentVariables) { throw "Variable documental no admitida: $($property.Name)" }
+        [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
+    }
+}
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
     $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
     $jar = Join-Path $localRoot 'backend.jar'

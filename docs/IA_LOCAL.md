@@ -153,3 +153,16 @@ el cliente actual usa 15 segundos, menos que los tiempos medidos de inferencia.
 La integración del navegador se realizará en las etapas de interfaz.
 
 Pruebas y reversión: [PRUEBAS_IA.md](PRUEBAS_IA.md).
+
+## Extracción documental: etapa 3
+
+La API `/api/documentos/extraer` prepara texto de PDF, DOCX y JPG/JPEG para las
+futuras etapas de recuperación. Funciona sin Ollama y no llama a un modelo de
+visión: utiliza PDFBox, POI y Tesseract local. Tiene configuración y límites
+independientes en `app.documentos` y está deshabilitada por defecto.
+
+El lanzador Windows admite `.local/documentos-config.json`; no cambia las
+variables de `.local/ia-config.json`. Los archivos extraídos se eliminan y no
+se agregan al conocimiento automáticamente. La nueva API todavía no tiene una
+pantalla propia. Contrato, instalación, privacidad y limitaciones en
+[CHATBOT_MULTIMODAL.md](CHATBOT_MULTIMODAL.md).

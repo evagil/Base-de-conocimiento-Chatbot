@@ -17,6 +17,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ManejadorGlobalExcepciones {
+    @ExceptionHandler(com.municipio.base_conocimiento.documentos.exception.DocumentoException.class)
+    ResponseEntity<ErrorResponse> errorDocumento(com.municipio.base_conocimiento.documentos.exception.DocumentoException ex) {
+        return respuesta(ex.getStatus(), ex.getCodigo(), ex.getMessage(), Map.of());
+    }
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ErrorResponse> multipartGrande(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return respuesta(HttpStatus.PAYLOAD_TOO_LARGE, "ARCHIVO_DEMASIADO_GRANDE", "El archivo supera el tamaño máximo permitido.", Map.of());
+    }
     @ExceptionHandler(com.municipio.base_conocimiento.ia.exception.IaException.class)
     ResponseEntity<ErrorResponse> errorIa(com.municipio.base_conocimiento.ia.exception.IaException ex) {
         return respuesta(ex.getStatus(), ex.getCodigo(), ex.getMessage(), Map.of());
