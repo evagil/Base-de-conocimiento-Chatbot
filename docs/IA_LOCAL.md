@@ -193,5 +193,6 @@ embeddings. Requieren un índice preparado y, para el modo híbrido,
 El lanzador Windows admite `.local/rag-config.json`; ver [USO_WINDOWS.md](USO_WINDOWS.md).
 Los ocho parámetros, contratos, límites y reglas de abstención están en
 [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md#consulta-híbrida-y-rag-extractivo-etapa-5).
-La interfaz conversacional corresponde a la etapa 6. Esta etapa no entrena ni
+La interfaz conversacional de etapa 6 se describe en [CHATBOT.md](CHATBOT.md).
+Esta integración no entrena ni
 modifica los pesos de los modelos: recupera fuentes y valida una cita literal.

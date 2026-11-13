@@ -440,3 +440,48 @@ la configuración privada Windows permite activarla para uso local.
   respondieron 401 sin token. Los casos positivos autenticados se verificaron
   mediante las pruebas automatizadas; no se usaron credenciales de usuarios reales
   para hacer consultas al corpus restaurado durante esta comprobación de arranque.
+
+## Etapa 6: interfaz del chatbot
+
+Las pruebas nuevas cubren el transporte con JWT compartido, timeouts y señales
+de cancelación, límites de archivo y pregunta, revisión de extracción sin recortes,
+historial acotado sin persistencia, borrador conservado ante fallos y descarte de
+resultados tardíos tras cancelar o desmontar. Se verifica que solo se envía la
+pregunta del turno, sin el historial como contexto autorizado.
+
+`ChatbotDialog.test.jsx` verifica respuesta con fuente, advertencia de búsqueda
+acotada, renderizado como texto de contenido que parece HTML, navegación por IDs
+en lugar de URLs arbitrarias, revisión del OCR, consulta sin evidencia, error de
+Ollama, cancelación y descarga como blob por la API autenticada. `App.test.jsx`
+incluye apertura y cierre desde el espacio autenticado. `httpClient.test.js`
+comprueba que un 413 estructurado de RAG conserva su mensaje específico.
+
+No se modificó el backend en esta etapa; su última verificación completa es la
+de etapa 5: 130 casos y 96,99 % de líneas. La comprobación de interfaz usa dobles
+HTTP sintéticos, no credenciales ni documentos de usuarios reales. No equivale
+a una evaluación de relevancia sobre el catálogo privado. Las reglas de permisos,
+OCR real y selección nativa de evidencia permanecen cubiertas por esa suite backend.
+
+Ejecutar los tres comandos habituales del frontend: `npm run lint`,
+`npm run test:coverage -- --maxWorkers=1` y `npm run build`.
+Los logs de la verificación final quedan en `.local/chatbot-frontend-lint.log`,
+`.local/chatbot-frontend-coverage.log` y `.local/chatbot-frontend-build.log`.
+Las pruebas seleccionadas de los seis archivos relacionados pasaron 26 casos
+antes de iniciar la corrida final completa.
+
+### Resultados de la etapa 6, 13/11/2026
+
+- Frontend: 18 archivos y 70 pruebas aprobadas, sin fallos ni omisiones;
+  14 casos adicionales respecto de etapa 5. La corrida con cobertura duró
+  aproximadamente 3 min 26 s, con un trabajador y heap Node de 1536 MiB.
+- Cobertura del alcance configurado (API, hooks y utilidades): líneas 168/168
+  (100 %), sentencias 97,51 %, funciones 95,93 % y ramas 95,41 %. Se conservaron
+  los umbrales y las inclusiones existentes. La UI se comprueba mediante pruebas
+  de comportamiento y no forma parte de ese porcentaje de cobertura.
+- ESLint sin errores, con las tres advertencias anteriores de Fast Refresh.
+  Build de producción aprobado; se conserva el aviso de bundle mayor a 500 kB.
+- La aplicación local sirve HTTP 200 y el módulo del chatbot actualizado.
+  Los servicios de respuesta y extracción continúan requiriendo autenticación.
+  No se reiniciaron ni modificaron los datos de PostgreSQL para incorporar la UI.
+- La etapa 5 quedó publicada en `develop` mediante el commit `f702471`.
+  Los cambios de etapa 6 se mantienen separados para su revisión y próximo commit.

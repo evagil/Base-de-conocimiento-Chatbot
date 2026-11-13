@@ -1,8 +1,8 @@
 # Índice y consulta del conocimiento: etapas 4 y 5 de IA
 
 La etapa 4 prepara las fuentes y la etapa 5 agrega búsqueda híbrida y respuestas
-con evidencia. La pantalla del chatbot y las herramientas del agente corresponden
-a las etapas 6 y 7. El conocimiento original sigue siendo la fuente de verdad.
+con evidencia. La pantalla del chatbot se incorpora en la etapa 6; las herramientas
+del agente corresponden a la etapa 7. El conocimiento original sigue siendo la fuente de verdad.
 
 ## Datos y arquitectura
 
@@ -225,8 +225,8 @@ Cada fuente identifica problema, solución, paso y archivo cuando corresponden,
 tipo, título, página opcional, extracto y puntuación. El backend construye
 `enlace` hacia `/problemas/{id}` y `enlaceArchivo` hacia la descarga privada
 `/api/archivos/{id}/contenido`; esta última sigue requiriendo JWT. No acepta
-enlaces suministrados por el modelo. La interfaz para abrir estas referencias y
-combinar la consulta con documentos temporales corresponde a la etapa 6.
+enlaces suministrados por el modelo. La interfaz de etapa 6 para abrir estas
+referencias y revisar documentos temporales se describe en [CHATBOT.md](CHATBOT.md).
 
 La recuperación normaliza la pregunta y combina dos rankings:
 

@@ -214,5 +214,18 @@ existente, sujeto a las verificaciones de vigencia.
 La API recibe un JWT de cualquiera de los tres roles y una pregunta textual en
 `POST /api/rag/buscar` o `POST /api/rag/responder`. Por ejemplo, el cuerpo es
 `{"pregunta":"¿Cómo corregir E17?"}`. La pantalla para interactuar con estas APIs
-se implementa en la etapa 6; el navegador mantiene por ahora la interfaz existente.
+está disponible desde el botón **Chatbot** de la barra superior (etapa 6).
 Consultar [ARQUITECTURA_RAG.md](ARQUITECTURA_RAG.md) para contratos y limitaciones.
+
+## Usar la pantalla del chatbot: etapa 6
+
+Iniciá sesión y presioná **Chatbot**. Escribí una descripción o usá **Extraer texto
+de archivo** con PDF, DOCX o JPG/JPEG. Revisá el resultado del OCR, agregá el
+fragmento relevante a la consulta y presioná **Consultar**. Si supera los 1000
+caracteres, acortalo antes de enviar. Las fuentes permiten abrir el problema y
+descargar el documento privado con tu sesión. Ver [CHATBOT.md](CHATBOT.md).
+
+El frontend usa los mismos servicios locales ya preparados. En el entorno con
+Vite, los cambios se cargan al actualizar el navegador; para una instalación de
+producción, recompilar el frontend. No hace falta reiniciar PostgreSQL ni aplicar
+migraciones. El historial se mantiene en memoria y no se guarda como conocimiento.

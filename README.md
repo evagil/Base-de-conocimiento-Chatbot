@@ -18,6 +18,7 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Hardware, selección y evaluación de modelos](docs/INSTALACION_MODELOS.md)
 - [Extracción local de PDF, DOCX y JPG: etapa 3 de IA](docs/CHATBOT_MULTIMODAL.md)
 - [Índice incremental, búsqueda híbrida y respuestas RAG: etapas 4 y 5 de IA](docs/ARQUITECTURA_RAG.md)
+- [Chatbot dentro de la aplicación: etapa 6 de IA](docs/CHATBOT.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -28,8 +29,8 @@ El alcance de la medición del frontend está explicado en la guía de pruebas.
 Actualizado el 13/11/2026. Las etapas originales 1 a 4 están implementadas. El esquema
 incluye migraciones V1 a V12 en PostgreSQL. La etapa 5 de IA incorpora una API de
 búsqueda híbrida y respuestas con citas verificadas. Actualmente el árbol se filtra
-por área, subárea, título y etiquetas en el navegador. La interfaz del chatbot
-corresponde a la etapa 6 y todavía está pendiente.
+por área, subárea, título y etiquetas en el navegador. La etapa 6 agrega la
+interfaz del chatbot desde el botón **Chatbot** de la barra superior.
 
 La etapa 1 de preparación para IA local corrige la visibilidad de soluciones,
 pasos e imágenes para lectores y conserva el acceso de edición al historial.
@@ -52,8 +53,8 @@ será exclusivamente textual, no analizará imágenes ni generará tickets.
 La etapa 3 de IA agrega `POST /api/documentos/extraer`: extrae texto de PDF y
 DOCX y usa Tesseract local para JPG/JPEG y páginas PDF escaneadas. El endpoint
 requiere sesión, aplica límites y elimina los archivos temporales; no guarda
-conocimiento ni utiliza servicios externos. La pantalla del chatbot
-continúa pendiente. Ver [la guía de extracción](docs/CHATBOT_MULTIMODAL.md)
+conocimiento ni utiliza servicios externos. La pantalla del chatbot permite
+revisar el texto extraído antes de consultar. Ver [la guía de extracción](docs/CHATBOT_MULTIMODAL.md)
 para activar la función, instalar OCR y consultar sus limitaciones.
 
 La etapa 4 agrega un índice derivado de conocimiento publicado y activo, con
@@ -68,7 +69,13 @@ los tres roles. Combina texto completo español y similitud de embeddings median
 una comparación acotada en Java. El modelo selecciona una cita literal; el backend
 comprueba su contenido y la vigencia de la fuente antes de responder. Si falta
 evidencia, se abstiene. Se habilita con `RAG_ENABLED=true`; no necesita nuevas
-migraciones. La integración de estas APIs con la pantalla corresponde a la etapa 6.
+migraciones. La etapa 6 integra estas APIs con la pantalla del chatbot.
+
+La etapa 6 permite escribir o pegar una consulta y extraer texto de PDF, DOCX o
+JPG/JPEG para revisarlo antes de consultar. Muestra respuestas, fuentes, navegación
+al problema y descarga autenticada del documento original. El historial permanece
+en memoria, con cancelación y controles de longitud. Ver [CHATBOT.md](docs/CHATBOT.md)
+para uso, activación, privacidad y límites. El agente textual queda para la etapa 7.
 
 La Etapa 1 incluye:
 

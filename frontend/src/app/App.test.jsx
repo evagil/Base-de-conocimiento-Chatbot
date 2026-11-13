@@ -22,6 +22,14 @@ vi.mock('../components/RichTextEditor.jsx', () => ({
 
 afterEach(() => { cleanup(); localStorage.removeItem('bc_sidebar_pinned'); vi.restoreAllMocks() })
 
+it('opens the chatbot from the authenticated workspace', async () => {
+  render(<MemoryRouter><App/></MemoryRouter>)
+  fireEvent.click(screen.getByRole('button', { name: 'Chatbot', exact: true }))
+  expect(await screen.findByRole('dialog', { name: 'Chatbot del conocimiento' }, { timeout: 10000 })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar chatbot' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 10000 })
+})
+
 it('opens an empty creation form even when a problem is selected, and preserves editing', async () => {
   render(<MemoryRouter initialEntries={['/problemas/3']}><App/></MemoryRouter>)
   fireEvent.click(screen.getByRole('button', { name: 'Editar', exact: true }))

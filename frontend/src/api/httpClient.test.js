@@ -63,6 +63,14 @@ it('requires an explicit nonnegative version for modifications', () => {
   for (const value of [undefined, null, -1, 1.2, '2']) expect(() => versionParams(value)).toThrow('Falta la versión')
 })
 
+it('preserves a structured RAG size error instead of calling it an upload error', async () => {
+  http.defaults.adapter = config => Promise.reject(new axios.AxiosError('Request failed', 'ERR_BAD_REQUEST', config, null,
+    { status: 413, data: { codigo: 'RAG_CONTEXTO_INSUFICIENTE', mensaje: 'Acortá la pregunta.' } }))
+  await expect(http.post('/api/rag/responder', { pregunta: 'E17' })).rejects.toMatchObject({
+    status: 413, code: 'RAG_CONTEXTO_INSUFICIENTE', message: 'Acortá la pregunta.',
+  })
+})
+
 it('uses the token already renewed by another request without refreshing again', async () => {
   const refresh = vi.spyOn(axios, 'post')
   http.defaults.adapter = config => {

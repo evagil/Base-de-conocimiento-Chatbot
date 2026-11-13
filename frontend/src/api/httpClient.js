@@ -55,10 +55,10 @@ http.interceptors.response.use(
         error = refreshError
       }
     }
-    const result = new Error(error.response?.status === 413
+    const result = new Error(error.response?.data?.mensaje || (error.response?.status === 413
       ? 'El servidor rechazó el archivo por tamaño. Avisá a administración para revisar el límite de carga.'
-      : error.response?.data?.mensaje || error.response?.data?.detail ||
-        error.message || 'No se pudo completar la operación.')
+      : error.response?.data?.detail ||
+        error.message || 'No se pudo completar la operación.'))
     result.status = error.response?.status
     result.code = error.response?.data?.codigo
     throw result

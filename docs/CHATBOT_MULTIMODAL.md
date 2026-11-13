@@ -4,7 +4,7 @@ La base de conocimientos necesita poder aprovechar manuales y capturas sin
 enviarlos a servicios externos. Esta etapa incorpora la extracción de texto
 previa al chatbot. El endpoint devuelve texto y referencias de página; todavía
 no genera respuestas, no indexa archivos ni guarda conocimiento automáticamente.
-La interfaz de chat se implementará en la etapa 6.
+La interfaz de la etapa 6 está descrita en [CHATBOT.md](CHATBOT.md).
 
 ## Arquitectura y decisiones
 
