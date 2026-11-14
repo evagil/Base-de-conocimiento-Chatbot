@@ -229,3 +229,17 @@ El frontend usa los mismos servicios locales ya preparados. En el entorno con
 Vite, los cambios se cargan al actualizar el navegador; para una instalación de
 producción, recompilar el frontend. No hace falta reiniciar PostgreSQL ni aplicar
 migraciones. El historial se mantiene en memoria y no se guarda como conocimiento.
+
+## Activar y usar el agente textual: etapa 7
+
+Con Ollama, IA, RAG y el índice local preparados, crear o editar el archivo
+privado `.local/agente-config.json` con `{"AGENT_ENABLED":"true"}`. Recompilar
+y reiniciar el backend para aplicar la configuración. El lanzador también admite
+`AGENT_MAX_ITERATIONS` (predeterminado 6) y `AGENT_TIMEOUT` (predeterminado 600s).
+No requiere migraciones, nuevos modelos ni cambios en el storage.
+
+Actualizá el navegador, iniciá sesión y presioná **Agente textual**. Escribí el
+código y la descripción del problema. La pantalla muestra la solución, sus pasos
+y las consultas realizadas. Solo admite texto; los documentos e imágenes se
+consultan desde el chatbot. Ver [AGENTE_TEXTUAL.md](AGENTE_TEXTUAL.md) para los
+límites, permisos, cancelación y reglas de abstención.

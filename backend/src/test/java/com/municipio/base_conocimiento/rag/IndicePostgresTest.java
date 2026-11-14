@@ -31,6 +31,12 @@ class IndicePostgresTest {
             assertThat(jdbc.queryForObject("SELECT titulo FROM problemas WHERE id=1",String.class)).isEqualTo("E17");
             assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=? AND indexname='idx_rag_texto'",Long.class,esquema)).isEqualTo(1);
             var repo=new IndiceRepository(jdbc,new ObjectMapper());
+            jdbc.update("INSERT INTO soluciones(id,problema_id,titulo,descripcion_html,descripcion_texto,principal,orden) VALUES(1,1,'Principal','<p>Cerrar</p>','Cerrar la aplicación',TRUE,5)");
+            jdbc.update("INSERT INTO soluciones(id,problema_id,titulo,descripcion_html,descripcion_texto,principal,orden) VALUES(2,1,'Otra','<p>Otra</p>','Otra solución',FALSE,1)");
+            jdbc.update("INSERT INTO pasos_solucion(id,solucion_id,titulo,contenido_html,contenido_texto,orden) VALUES(1,1,'Segundo','<p>Abrir</p>','Abrir',9),(2,1,'Primero','<p>Cerrar</p>','Cerrar',2)");
+            var herramientas=new com.municipio.base_conocimiento.agente.HerramientasAgenteRepository(jdbc);
+            assertThat(herramientas.soluciones(1)).extracting(com.municipio.base_conocimiento.agente.HerramientasAgenteRepository.Solucion::id).containsExactly(1L,2L);
+            assertThat(herramientas.pasos(1)).extracting(com.municipio.base_conocimiento.agente.HerramientasAgenteRepository.Paso::orden).containsExactly(2,9);
             var lector=new FuentesIndiceRepository(jdbc,new ConfiguracionIndice(true,false,600,80,128,100,3,Duration.ofSeconds(120)));
             var snapshot=lector.obtener(1);
             tx.executeWithoutResult(status->{var trabajo=repo.tomar();assertThat(repo.guardar(trabajo,snapshot,"h".repeat(64),List.of(new Fragmento(snapshot.fuentes().getFirst(),null,"Reiniciar aplicación E17")),null,List.of())).isTrue();status.setRollbackOnly();});
@@ -55,6 +61,7 @@ class IndicePostgresTest {
             assertThat(jdbc.queryForObject("SELECT count(*) FROM rag_fragmentos_vigentes",Long.class)).isZero();
             assertThat(consulta.textual("reiniciar",10)).isEmpty();
             assertThat(consulta.vigente(encontrados.getFirst().id())).isEmpty();
+            assertThat(herramientas.soluciones(1)).isEmpty();assertThat(herramientas.pasos(1)).isEmpty();
             tx.executeWithoutResult(status->repo.reconstruir(false));
             boolean obsoleto=Boolean.TRUE.equals(tx.execute(status->repo.guardar(trabajo,snapshot,"h".repeat(64),List.of(),null,List.of())));
             assertThat(obsoleto).isFalse();

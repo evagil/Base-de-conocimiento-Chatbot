@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import App from './App.jsx'
@@ -28,6 +28,31 @@ it('opens the chatbot from the authenticated workspace', async () => {
   expect(await screen.findByRole('dialog', { name: 'Chatbot del conocimiento' }, { timeout: 10000 })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Cerrar chatbot' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 10000 })
+})
+
+it('opens the separate textual agent without file inputs', async () => {
+  render(<MemoryRouter><App/></MemoryRouter>)
+  fireEvent.click(screen.getByRole('button', { name: 'Agente textual', exact: true }))
+  const dialog = await screen.findByRole('dialog', { name: 'Agente textual de consulta' }, { timeout: 10000 })
+  expect(within(dialog).queryByLabelText('Seleccionar archivo para el chatbot')).not.toBeInTheDocument()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar agente' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 10000 })
+})
+
+it('keeps content below the header when navigation wraps on narrow screens', () => {
+  let height = 136
+  const callbacks = []
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+    return { height: this.tagName === 'HEADER' ? height : 0, width: 320, top: 0, left: 0, right: 320, bottom: height }
+  })
+  vi.stubGlobal('ResizeObserver', class { constructor(callback) { callbacks.push(callback) } observe() {} disconnect() {} })
+  try {
+    render(<MemoryRouter><App/></MemoryRouter>)
+    expect(screen.getByRole('main')).toHaveStyle({ paddingTop: '168px' })
+    height = 180
+    act(() => callbacks[0]())
+    expect(screen.getByRole('main')).toHaveStyle({ paddingTop: '212px' })
+  } finally { cleanup(); vi.unstubAllGlobals() }
 })
 
 it('opens an empty creation form even when a problem is selected, and preserves editing', async () => {

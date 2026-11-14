@@ -16,7 +16,7 @@ con contexto de 2048 tokens, dos hilos, temperatura 0 y descarga de RAM al termi
 
 | Modelo local | Tamaño del archivo aproximado | Resultado |
 |---|---|---|
-| `granite4.2:3b` | 2,24 GB | Seleccionado para conversación y candidato del agente |
+| `granite4.2:3b` | 2,24 GB | Seleccionado para conversación y agente textual controlado |
 | `gemma3:1b` | 0,82 GB | Más rápido; mostró sensibilidad a las instrucciones |
 | `qwen3:4b` | 2,50 GB | No seleccionado: los pesos son Thinking-2507 |
 
@@ -57,11 +57,11 @@ no garantías de latencia. La memoria máxima de proceso no se instrumentó en e
 
 La selección de herramientas mostró una limitación concreta. El esquema JSON
 garantizó la forma del objeto, pero no la corrección semántica del argumento.
-Granite queda como candidato del agente, no como agente ya validado. La etapa 7
-debe probar secuencias, argumentos y límites antes de considerar terminado al agente.
-Los argumentos de búsqueda deberán contrastarse con la consulta original y
-las referencias solo podrán pertenecer a registros recuperados y autorizados.
-Esta etapa no ejecuta herramientas por indicación del modelo.
+En la etapa 2 Granite quedó como candidato del agente y no se ejecutaban
+herramientas por indicación del modelo. La etapa 7 agrega el protocolo controlado
+y su prueba nativa: la búsqueda usa siempre la pregunta original y las referencias
+solo pueden pertenecer a registros recuperados y autorizados. Ver
+[AGENTE_TEXTUAL.md](AGENTE_TEXTUAL.md) para las decisiones y limitaciones.
 
 Los resultados locales de evaluación están en `.local/ia-evaluation.json`,
 `.local/ia-granite-final.json` y `.local/ia-granite-json.json`. Los ensayos fallidos

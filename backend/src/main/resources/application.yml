@@ -56,6 +56,10 @@ app:
     max-contexto: ${RAG_MAX_CONTEXT_CHARS:1600}
     similitud-minima: ${RAG_MIN_SIMILARITY:0.65}
     timeout: ${RAG_QUERY_TIMEOUT:240s}
+  agente:
+    habilitado: ${AGENT_ENABLED:false}
+    max-iteraciones: ${AGENT_MAX_ITERATIONS:6}
+    timeout: ${AGENT_TIMEOUT:600s}
   indice:
     habilitado: ${RAG_INDEX_ENABLED:false}
     embeddings: ${RAG_EMBEDDINGS_ENABLED:false}

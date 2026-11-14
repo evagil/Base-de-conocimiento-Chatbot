@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { chatApi } from '../api/chatApi.js'
 import { extractedText, MAX_QUESTION, validateChatFile } from '../utils/chat.js'
 
-export function useChat() {
+export function useChat(agent = false) {
   const [question, setQuestion] = useState('')
   const [history, setHistory] = useState([])
   const [document, setDocument] = useState(null)
@@ -34,7 +34,7 @@ export function useChat() {
   const ask = () => {
     const text = question.trim()
     if (!text || question.length > MAX_QUESTION) { setError(`Escribí una consulta de hasta ${MAX_QUESTION} caracteres.`); return }
-    return run('answer', signal => chatApi.answer(text, signal), answer => {
+    return run('answer', signal => (agent ? chatApi.agent : chatApi.answer)(text, signal), answer => {
       // Cada turno es una consulta independiente; no se envía el historial como evidencia.
       setHistory(current => [...current.slice(-9), { question: text, answer }]); setQuestion('')
     })

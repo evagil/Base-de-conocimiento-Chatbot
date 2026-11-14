@@ -14,10 +14,10 @@ import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { chatApi } from '../api/chatApi.js'
 import { useChat } from '../hooks/useChat.js'
-import { downloadName, MAX_QUESTION, problemPath } from '../utils/chat.js'
+import { downloadName, MAX_QUESTION, problemPath, solutionPath } from '../utils/chat.js'
 
-export default function ChatbotDialog({ open, onClose }) {
-  const chat = useChat()
+export default function ChatbotDialog({ open, onClose, agent = false }) {
+  const chat = useChat(agent)
   const navigate = useNavigate()
   const small = useMediaQuery('(max-width:600px)')
   const end = useRef(null)
@@ -29,25 +29,30 @@ export default function ChatbotDialog({ open, onClose }) {
     link.href = url; link.download = downloadName(source); link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   })
-  return <Dialog open={open} onClose={close} fullScreen={small} fullWidth maxWidth="md" aria-labelledby="chatbot-title">
-    <DialogTitle id="chatbot-title">Chatbot del conocimiento</DialogTitle>
+  const titleId = agent ? 'agent-title' : 'chatbot-title'
+  return <Dialog open={open} onClose={close} fullScreen={small} fullWidth maxWidth="md" aria-labelledby={titleId}>
+    <DialogTitle id={titleId}>{agent ? 'Agente textual de consulta' : 'Chatbot del conocimiento'}</DialogTitle>
     <DialogContent dividers>
       <Stack sx={{ gap: 2 }}>
         <Typography variant="body2" color="text.secondary">Consultá problemas, soluciones y pasos publicados. La IA busca evidencia local y puede indicar que falta información. Revisá siempre la fuente.</Typography>
+        {agent && <Alert severity="info">Describí el problema con texto. El agente elige qué problemas, soluciones y pasos consultar; no modifica registros ni ejecuta acciones externas.</Alert>}
         <Typography variant="caption">Cada consulta es independiente. Hasta 10 intercambios en memoria; se borran al limpiar, salir de la sesión o recargar.</Typography>
-        <Box role="log" aria-label="Conversación del chatbot" aria-live="polite" sx={{ maxHeight: { xs: '35vh', sm: '40vh' }, overflowY: 'auto' }}>
+        <Box role="log" aria-label={agent ? 'Conversación del agente' : 'Conversación del chatbot'} aria-live="polite" sx={{ maxHeight: { xs: '35vh', sm: '40vh' }, overflowY: 'auto' }}>
           {!chat.history.length && <Typography color="text.secondary">Describí el error o pegá el texto de un documento para empezar.</Typography>}
           {chat.history.map((turn, index) => <Stack key={index} sx={{ gap: 1, mb: 3 }}>
             <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 2 }}><Typography variant="subtitle2">Tu consulta</Typography><Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{turn.question}</Typography></Box>
             <Typography variant="subtitle2">Respuesta</Typography>
             <Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{turn.answer.texto}</Typography>
-            {turn.answer.busquedaAcotada && <Alert severity="info">La búsqueda alcanzó su límite de candidatos. Podría haber otras fuentes; precisá el código o el problema.</Alert>}
+            {agent && ['LIMITE_ITERACIONES', 'ACCION_INVALIDA', 'LIMITE_FUENTES', 'FUENTES_ACTUALIZADAS'].includes(turn.answer.estado) && <Alert severity="warning">{{ LIMITE_ITERACIONES: 'El agente alcanzó el máximo de iteraciones. Precisá la descripción antes de reintentar.', ACCION_INVALIDA: 'El modelo propuso una acción inválida. Esa acción no se ejecutó.', LIMITE_FUENTES: 'La fuente supera los límites de lectura. Acotá la consulta o buscá el problema en el árbol.', FUENTES_ACTUALIZADAS: 'El conocimiento cambió durante la consulta. Volvé a consultar.' }[turn.answer.estado]}</Alert>}
+            {agent && <Typography variant="caption">Consultas realizadas: {turn.answer.herramientas?.map(tool => ({ buscar_problema: 'buscar problemas', obtener_solucion: 'leer soluciones', obtener_pasos: 'leer pasos' })[tool.nombre]).filter(Boolean).join(' → ') || 'ninguna'}</Typography>}
+            {turn.answer.busquedaAcotada && <Alert severity="info">{agent ? 'La consulta alcanzó un límite de búsqueda o contexto. Precisá el código o el problema.' : 'La búsqueda alcanzó su límite de candidatos. Podría haber otras fuentes; precisá el código o el problema.'}</Alert>}
             {turn.answer.fuentes?.map((source, number) => <Box key={number} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
               <Typography variant="subtitle2">Fuente {number + 1}: {source.titulo}</Typography>
               <Typography variant="caption">{source.tipo} · Problema {source.problemaId}{source.solucionId != null && ` · Solución ${source.solucionId}`}{source.pasoId != null && ` · Paso ${source.pasoId}`}{source.pagina != null && ` · Página ${source.pagina}`}</Typography>
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{source.extracto}</Typography>
               <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
                 {problemPath(source) && <Button onClick={() => { close(); navigate(problemPath(source)) }}>Abrir problema</Button>}
+                {solutionPath(source) && <Button onClick={() => { close(); navigate(solutionPath(source)) }}>Abrir solución</Button>}
                 {Number.isSafeInteger(source.archivoId) && source.archivoId > 0 && <Button disabled={Boolean(chat.busy)} onClick={() => download(source)}>Descargar fuente</Button>}
               </Stack>
             </Box>)}
@@ -55,7 +60,7 @@ export default function ChatbotDialog({ open, onClose }) {
           <span ref={end}/>
         </Box>
         {chat.error && <Alert severity="error" onClose={() => chat.setError('')}>{chat.error}</Alert>}
-        {chat.document && <Stack sx={{ gap: 1 }}>
+        {!agent && chat.document && <Stack sx={{ gap: 1 }}>
           <Typography variant="subtitle2">Documento: {chat.document.nombre}</Typography>
           <Typography variant="caption">{chat.document.paginas == null ? 'Sin paginación estable' : `${chat.document.paginas} página(s)`} · {chat.document.ocrUsado ? 'Texto reconocido con OCR: revisá posibles errores.' : 'Texto extraído del documento.'}</Typography>
           <TextField label="Texto extraído (editable)" multiline minRows={3} maxRows={8} value={chat.extracted} disabled={Boolean(chat.busy)} onChange={e => chat.setExtracted(e.target.value)}/>
@@ -65,12 +70,12 @@ export default function ChatbotDialog({ open, onClose }) {
         <TextField label="Tu consulta al conocimiento" multiline minRows={3} maxRows={8} value={chat.question} disabled={Boolean(chat.busy)} onChange={e => chat.setQuestion(e.target.value)} error={chat.question.length > MAX_QUESTION} helperText={`${chat.question.length}/${MAX_QUESTION} caracteres${chat.question.length > MAX_QUESTION ? '. Acortá el texto antes de consultar.' : ''}`}/>
         <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
           <Button variant="contained" disabled={Boolean(chat.busy) || !chat.question.trim() || chat.question.length > MAX_QUESTION} onClick={chat.ask}>Consultar</Button>
-          <Button component="label" disabled={Boolean(chat.busy)}>Extraer texto de archivo<input aria-label="Seleccionar archivo para el chatbot" type="file" hidden accept=".pdf,.docx,.jpg,.jpeg" disabled={Boolean(chat.busy)} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) chat.extract(file) }}/></Button>
+          {!agent && <Button component="label" disabled={Boolean(chat.busy)}>Extraer texto de archivo<input aria-label="Seleccionar archivo para el chatbot" type="file" hidden accept=".pdf,.docx,.jpg,.jpeg" disabled={Boolean(chat.busy)} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) chat.extract(file) }}/></Button>}
           {chat.busy && <><CircularProgress size={20}/><Typography role="status">{chat.busy === 'extract' ? 'Extrayendo texto…' : chat.busy === 'download' ? 'Descargando fuente…' : 'Buscando evidencia y preparando respuesta…'}</Typography><Button onClick={chat.cancel}>Cancelar operación</Button></>}
         </Stack>
-        <Typography variant="caption" color="text.secondary">PDF, DOCX o JPG/JPEG hasta 10 MB. Las imágenes se leen mediante OCR. Los archivos temporales no se publican como conocimiento. Cancelar deja de esperar en esta pantalla; el servidor puede terminar la operación iniciada.</Typography>
+        <Typography variant="caption" color="text.secondary">{!agent && 'PDF, DOCX o JPG/JPEG hasta 10 MB. Las imágenes se leen mediante OCR. Los archivos temporales no se publican como conocimiento. '}Cancelar deja de esperar en esta pantalla; el servidor puede terminar la operación iniciada.</Typography>
       </Stack>
     </DialogContent>
-    <DialogActions><Button onClick={chat.clear}>Limpiar conversación</Button><Button onClick={close}>Cerrar chatbot</Button></DialogActions>
+    <DialogActions><Button onClick={chat.clear}>Limpiar conversación</Button><Button onClick={close}>{agent ? 'Cerrar agente' : 'Cerrar chatbot'}</Button></DialogActions>
   </Dialog>
 }

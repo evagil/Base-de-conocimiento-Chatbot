@@ -17,12 +17,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:rag_consultas;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
- "app.indice.habilitado=true","app.indice.embeddings=true","app.indice.inicio=99999999","app.rag.habilitado=true"})
+ "app.indice.habilitado=true","app.indice.embeddings=true","app.indice.inicio=99999999","app.rag.habilitado=true","app.agente.habilitado=true"})
 @ActiveProfiles("test")
 class ConsultaRagIntegrationTest {
  @Autowired JdbcTemplate jdbc; @Autowired IndexadorConocimiento indexador;
  @Autowired BusquedaHibridaRag busqueda; @Autowired RespuestaConFuentesRag respuestas; @Autowired ConfiguracionIa ia;
  @MockitoBean ClienteOllama ollama;
+ @Autowired com.municipio.base_conocimiento.agente.AgenteConsulta agente;
+ @Autowired com.municipio.base_conocimiento.agente.HerramientasAgenteRepository herramientas;
  long problema,area,subarea,solucion; String codigo;
  @BeforeEach void datos(){
   String sufijo=UUID.randomUUID().toString();
@@ -78,5 +80,23 @@ class ConsultaRagIntegrationTest {
   assertThat(busqueda.buscar(codigo).coincidencias()).hasSize(2); // el texto sigue siendo recuperable
   jdbc.update("UPDATE subareas SET activo=FALSE WHERE id=?",subarea);
   assertThat(busqueda.buscar(codigo).coincidencias()).isEmpty();
+ }
+ @Test void agenteLeeSolucionPrincipalYPasosEnOrdenYRevalidaLaVisibilidad(){
+  jdbc.update("UPDATE soluciones SET principal=TRUE WHERE id=?",solucion);
+  insertar("INSERT INTO pasos_solucion(solucion_id,titulo,contenido_html,contenido_texto,orden) VALUES(?,?,?,?,?)",solucion,"Segundo","<p>Abrir</p>","Volver a abrir la aplicación.",9);
+  insertar("INSERT INTO pasos_solucion(solucion_id,titulo,contenido_html,contenido_texto,orden) VALUES(?,?,?,?,?)",solucion,"Primero","<p>Cerrar</p>","Cerrar la aplicación.",2);
+  ejecutar();
+  assertThat(herramientas.soluciones(problema).getFirst().principal()).isTrue();
+  assertThat(herramientas.pasos(solucion)).extracting(com.municipio.base_conocimiento.agente.HerramientasAgenteRepository.Paso::orden).containsExactly(2,9);
+  var llamadas=new java.util.concurrent.atomic.AtomicInteger();
+  when(ollama.conversar(any(),anyList(),anyMap())).thenAnswer(i->{int n=llamadas.getAndIncrement();String nombre=n==0?"buscar_problema":n==1?"obtener_solucion":n==2?"obtener_pasos":"finalizar";long id=n==0?0:n==1?problema:solucion;
+   return new RespuestaIa(ia.modeloAgente(),"{\"herramienta\":\""+nombre+"\",\"id\":"+id+"}",1,10);
+  });
+  var resultado=agente.consultar(codigo);assertThat(resultado.estado()).isEqualTo("CON_FUENTES");assertThat(resultado.texto()).contains("principal","1. Primero","2. Segundo");
+  assertThat(resultado.herramientas()).hasSize(3);
+  doAnswer(i->{jdbc.update("UPDATE problemas SET estado='ARCHIVADO',version=version+1 WHERE id=?",problema);return new RespuestaIa(ia.modeloAgente(),"{\"herramienta\":\"finalizar\",\"id\":"+solucion+"}",1,10);}).when(ollama).conversar(any(),anyList(),anyMap());
+  // No se puede saltar la búsqueda para elegir un ID que perteneció a otra ejecución.
+  assertThat(agente.consultar(codigo).fuentes()).isEmpty();
+  assertThat(herramientas.soluciones(problema)).isEmpty();assertThat(herramientas.pasos(solucion)).isEmpty();
  }
 }

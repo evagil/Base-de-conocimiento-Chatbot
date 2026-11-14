@@ -2,10 +2,19 @@ import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { chatApi } from '../api/chatApi.js'
 import { useChat } from './useChat.js'
-vi.mock('../api/chatApi.js', () => ({ chatApi: { answer: vi.fn(), extract: vi.fn() } }))
+vi.mock('../api/chatApi.js', () => ({ chatApi: { answer: vi.fn(), agent: vi.fn(), extract: vi.fn() } }))
 beforeEach(() => { vi.resetAllMocks() })
 afterEach(cleanup)
 const answer = { estado: 'INFORMACION_INSUFICIENTE', texto: 'Información insuficiente.', fuentes: [] }
+
+it('uses only the textual agent endpoint in agent mode', async () => {
+  chatApi.agent.mockResolvedValue(answer)
+  const { result } = renderHook(() => useChat(true))
+  act(() => result.current.setQuestion('Error E17'))
+  await act(() => result.current.ask())
+  expect(chatApi.agent).toHaveBeenCalledWith('Error E17', expect.any(AbortSignal))
+  expect(chatApi.answer).not.toHaveBeenCalled(); expect(chatApi.extract).not.toHaveBeenCalled()
+})
 
 it('submits independent questions and retains at most ten turns without storage', async () => {
   const save = vi.spyOn(Storage.prototype, 'setItem')

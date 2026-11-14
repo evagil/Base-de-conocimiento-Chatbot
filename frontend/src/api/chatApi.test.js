@@ -8,6 +8,8 @@ it('uses authenticated transport, explicit inference timeouts and abort signals'
   http.post.mockResolvedValue({ data: { estado: 'CON_FUENTES' } })
   expect(await chatApi.answer('E17', signal)).toEqual({ estado: 'CON_FUENTES' })
   expect(http.post).toHaveBeenLastCalledWith('/api/rag/responder', { pregunta: 'E17' }, { signal, timeout: 300000 })
+  await chatApi.agent('E17', signal)
+  expect(http.post).toHaveBeenLastCalledWith('/api/rag/agente', { pregunta: 'E17' }, { signal, timeout: 660000 })
   const file = new File(['contenido'], 'manual.pdf')
   await chatApi.extract(file, signal)
   const [route, form, options] = http.post.mock.lastCall

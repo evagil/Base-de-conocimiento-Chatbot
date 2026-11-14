@@ -484,4 +484,98 @@ antes de iniciar la corrida final completa.
   Los servicios de respuesta y extracción continúan requiriendo autenticación.
   No se reiniciaron ni modificaron los datos de PostgreSQL para incorporar la UI.
 - La etapa 5 quedó publicada en `develop` mediante el commit `f702471`.
-  Los cambios de etapa 6 se mantienen separados para su revisión y próximo commit.
+  La etapa 6 se publicó después en `develop` mediante el commit `8eca399`,
+  antes de comenzar la etapa 7.
+
+## Etapa 7: agente textual con herramientas
+
+`AgenteConsultaTest` comprueba selección de herramientas con un doble del modelo,
+IDs autorizados por ejecución, esquema estricto, rechazo de acciones arbitrarias,
+repeticiones, concurrencia, límites de iteraciones, tiempo, contexto y fuentes,
+abstención y cambios de solución/pasos antes de responder. No se admiten argumentos
+SQL ni herramientas adicionales. La respuesta se compone con evidencia leída y
+no con prosa libre del modelo.
+
+`AgenteControllerTest` verifica no-store y entrada exclusivamente JSON con el campo
+textual pregunta: rechaza multipart y campos de imagen o herramientas. La matriz
+de seguridad comprueba 401 anónimo y acceso autorizado de los tres roles, con
+función deshabilitada. El filtro de 16 KiB también cubre la nueva ruta RAG.
+
+`ConsultaRagIntegrationTest` agrega un caso con H2 propio que recorre búsqueda,
+solución principal, pasos ordenados y exclusión al archivar. `IndicePostgresTest`
+verifica las nuevas consultas de herramientas en PostgreSQL real: prioridad de
+la solución principal, orden de pasos y retirada de fuentes archivadas.
+
+`AgenteLocalSmokeTest`, habilitado mediante `BC_TEST_OLLAMA_URL`, utiliza Granite
+real y herramientas sintéticas. Exige que el modelo seleccione buscar, leer
+soluciones y leer pasos antes de finalizar con una referencia válida. No se
+transforma una abstención en éxito ni se fuerza la secuencia desde Java.
+La primera corrida ejecutó las tres herramientas pero terminó absteniéndose:
+el contexto solo conservaba el último resultado de pasos. Se agregó un resumen
+acotado de las soluciones leídas y sus pasos consultados; la segunda corrida
+volvió a abstenerse en la cuarta decisión. Se simplificó el cierre: pedir los
+pasos de un ID autorizado expresa la elección de solución y Java revalida y
+compone la respuesta tras esa tercera herramienta. El modelo conserva la elección
+entre soluciones y la abstención previa. No se relajaron controles de ejecución,
+referencias ni las aserciones que exigen las tres herramientas con el modelo real.
+
+Las pruebas frontend comprueban API textual separada, ausencia de inputs de
+archivo en el agente, traza de consultas, advertencias de límites y apertura
+desde la aplicación. Un caso verifica que el contenido se adapte a la altura de
+la cabecera al acomodar botones en pantallas angostas. El chatbot conserva sus
+controles multimodales y su historial independiente.
+La navegación directa a soluciones usa IDs y anclas internas: las pruebas verifican
+la ruta, rechazo de anclas inválidas y apertura de una solución secundaria contraída.
+
+Ejecutar la suite backend completa con las variables nativas de etapa 3 y Ollama
+abierto; después ejecutar lint, cobertura y build del frontend de forma secuencial.
+Logs: `.local/agente-targeted.log`, `.local/agente-seleccion.log`, `.local/agente-cierre.log`,
+`.local/agente-backend-verify.log` y `.local/agente-frontend-{lint,coverage,build}.log`.
+No se utilizan documentos, credenciales ni datos del corpus restaurado en los tests.
+La evaluación de relevancia sobre una muestra más amplia corresponde a etapa 8.
+
+### Resultados del backend de etapa 7, 13/11/2026
+
+- `mvn clean verify` aprobado: 141 pruebas, sin fallos, errores ni omisiones;
+  once casos adicionales respecto de etapa 5. Duración aproximada: 10 min 53 s.
+- JaCoCo: 1575/1622 líneas (97,10 %) y 1244/1414 ramas (87,98 %). El umbral
+  de líneas permanece en 92 % y no se agregaron exclusiones.
+- El modelo real ejecutó las tres herramientas y devolvió solución y pasos
+  verificados en 197,95 s dentro de la suite completa. La corrida aislada del
+  cierre simplificado había pasado en 206,05 s. Son dos ensayos sintéticos del
+  protocolo final, no una medición de precisión sobre el catálogo privado.
+- Las comprobaciones nativas de conversación, embeddings y RAG también pasaron:
+  41,72 s, 6,95 s y 58,57 s respectivamente. Embeddings conserva 768 dimensiones.
+  Los tiempos incluyen instrumentación y cargas de modelos; no son garantías.
+- PostgreSQL verificó prioridad de solución principal, orden de pasos y exclusión
+  de registros archivados, además de los once casos anteriores de concurrencia.
+- Las consultas H2 integradas y la matriz de permisos pasaron. El endpoint textual
+  rechazó multipart y campos extra sin ejecutar el servicio del agente.
+- PostgreSQL de pruebas se detuvo al finalizar. Se conserva V12 como última
+  migración, con conocimiento y storage restaurados fuera de las pruebas.
+
+### Resultados del frontend de etapa 7, 13/11/2026
+
+- Corrida final: 18 archivos y 77 pruebas aprobadas, sin fallos ni omisiones;
+  siete casos adicionales respecto de etapa 6. Duración aproximada: 3 min 32 s.
+- Cobertura del alcance configurado (API, hooks y utilidades): líneas 173/173
+  (100 %), sentencias 97,56 %, funciones 96,06 % y ramas 95,86 %. Los umbrales
+  e inclusiones permanecen sin cambios. Las pruebas de UI verifican comportamiento
+  y no forman parte de ese porcentaje.
+- ESLint sin errores y con las tres advertencias previas de Fast Refresh.
+  Build de producción aprobado; conserva la advertencia del bundle mayor a 500 kB.
+- La primera corrida del frontend se inició antes de terminar la navegación a
+  soluciones y mezcló un módulo transformado anterior con un test nuevo. Registró
+  un error de exportación en caché. Se conserva su log privado en
+  `.local/agente-frontend-primera-corrida.log`; se repitieron lint, toda la suite
+  con cobertura y build con el código final estable, obteniendo los resultados
+  aprobados anteriores. No se corrigió el porcentaje mediante exclusiones.
+- Entorno local reiniciado con el JAR comprobado por SHA-256 y el agente activado
+  mediante configuración privada. Se confirmó V12 sin migraciones pendientes,
+  frontend HTTP 200 y respuesta 401 sin token en agente y chatbot. El frontend
+  sirve el acceso al agente y las anclas de solución actualizadas.
+- La comprobación positiva del protocolo se hizo con herramientas y datos de
+  prueba, incluida la selección nativa de Ollama; no se usaron credenciales reales
+  para realizar consultas al corpus restaurado durante el arranque.
+- La etapa 6 está publicada en `develop` con `8eca399`. Los cambios de etapa 7
+  quedan en el árbol de trabajo para su revisión y próximo commit; `main` no se modificó.

@@ -27,6 +27,20 @@ describe('main visual components',()=>{
     const detail={problema:{id:1,area:'A',subarea:'S',titulo:'Error',estado:'PUBLICADO',etiquetas:['red'],descripcionHtml:'<p>Detalle</p><script>alert(1)</script>',modificadoEn:'2026-01-01'},soluciones:[{id:2,titulo:'Reiniciar',principal:true,descripcionHtml:'<p>Solución</p>',pasos:[{id:3,orden:1,titulo:'Abrir',contenidoHtml:'<p>Panel</p>'}]}]}
     render(<ProblemDetail detail={detail}/>);expect(screen.getByText('Reiniciar')).toBeInTheDocument();expect(screen.getByText('Panel')).toBeInTheDocument();expect(document.querySelector('script')).toBeNull()
   })
+  it('expands and scrolls to a nonprincipal solution selected by a source link',()=>{
+    const detail={problema:{id:1,area:'A',subarea:'S',titulo:'Error',estado:'PUBLICADO',etiquetas:[],descripcionHtml:'<p>Detalle</p>'},soluciones:[{id:9,titulo:'Principal',principal:true,descripcionHtml:'<p>Primera</p>',pasos:[]},{id:10,titulo:'Secundaria',principal:false,descripcionHtml:'<p>Segunda</p>',pasos:[]}]}
+    const original=Element.prototype.scrollIntoView
+    const scroll=vi.fn()
+    Element.prototype.scrollIntoView=scroll
+    try {
+      const {rerender}=render(<ProblemDetail detail={detail}/>)
+      expect(screen.getByRole('button',{name:'Secundaria'})).toHaveAttribute('aria-expanded','false')
+      rerender(<ProblemDetail detail={detail} targetSolutionId={10} targetRevision="fuente-2"/>)
+      expect(screen.getByRole('button',{name:'Secundaria'})).toHaveAttribute('aria-expanded','true')
+      expect(scroll).toHaveBeenCalledWith({block:'start'})
+      expect(document.getElementById('solucion-10')).toBeInTheDocument()
+    } finally { Element.prototype.scrollIntoView=original }
+  })
   it('loads and opens an image gallery, and tolerates failures',async()=>{
     knowledgeApi.images.mockResolvedValueOnce([{id:1,activo:true,urlContenido:'/x.png',textoAlternativo:'captura'}])
     const {rerender}=render(<ImageGallery owner="problemas" id={1}/>);await screen.findByAltText('captura');fireEvent.click(screen.getByAltText('captura'));await waitFor(()=>expect(screen.getAllByAltText('captura')).toHaveLength(2))

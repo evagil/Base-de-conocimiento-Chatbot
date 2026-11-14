@@ -1,17 +1,40 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import ChatbotDialog from './ChatbotDialog.jsx'
 import { chatApi } from '../api/chatApi.js'
-vi.mock('../api/chatApi.js', () => ({ chatApi: { answer: vi.fn(), extract: vi.fn(), download: vi.fn() } }))
+vi.mock('../api/chatApi.js', () => ({ chatApi: { answer: vi.fn(), agent: vi.fn(), extract: vi.fn(), download: vi.fn() } }))
 beforeEach(() => vi.resetAllMocks())
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 const source = { problemaId: 7, solucionId: 8, pasoId: 9, archivoId: 10, tipo: 'ADJUNTO', titulo: 'Error E17', pagina: 2, extracto: 'Reiniciar la aplicación.', enlace: 'https://externo.invalid', enlaceArchivo: 'https://externo.invalid/archivo' }
-function show() {
+function SourceTarget() { return <p>Detalle del problema abierto{useLocation().hash}</p> }
+function show(agent = false) {
  const close = vi.fn()
- const view = render(<MemoryRouter><Routes><Route path="/" element={<ChatbotDialog open onClose={close}/>}/><Route path="/problemas/7" element={<p>Detalle del problema abierto</p>}/></Routes></MemoryRouter>)
+ const view = render(<MemoryRouter><Routes><Route path="/" element={<ChatbotDialog agent={agent} open onClose={close}/>}/><Route path="/problemas/7" element={<SourceTarget/>}/></Routes></MemoryRouter>)
  return { ...view, close }
 }
+it('opens the cited solution using its internal anchor', async () => {
+ chatApi.answer.mockResolvedValue({ estado: 'CON_FUENTES', texto: 'Reiniciar.', fuentes: [source] })
+ show()
+ fireEvent.change(screen.getByLabelText('Tu consulta al conocimiento'), { target: { value: 'E17' } })
+ fireEvent.click(screen.getByRole('button', { name: 'Consultar', exact: true }))
+ fireEvent.click(await screen.findByRole('button', { name: 'Abrir solución' }))
+ expect(await screen.findByText('Detalle del problema abierto#solucion-8')).toBeInTheDocument()
+})
+it('provides a separate textual agent without upload controls and explains tool limits', async () => {
+ chatApi.agent.mockResolvedValue({ estado: 'LIMITE_ITERACIONES', texto: 'No se encontró una solución.', fuentes: [], busquedaAcotada: true, herramientas: [{ nombre: 'buscar_problema', id: 0, estado: 'OK' }] })
+ show(true)
+ expect(screen.getByRole('dialog', { name: 'Agente textual de consulta' })).toBeInTheDocument()
+ expect(screen.queryByLabelText('Seleccionar archivo para el chatbot')).not.toBeInTheDocument()
+ expect(screen.queryByRole('button', { name: 'Extraer texto de archivo' })).not.toBeInTheDocument()
+ expect(document.querySelector('input[type=file]')).toBeNull()
+ fireEvent.change(screen.getByLabelText('Tu consulta al conocimiento'), { target: { value: 'E17' } })
+ fireEvent.click(screen.getByRole('button', { name: 'Consultar', exact: true }))
+ expect(await screen.findByText(/máximo de iteraciones/)).toBeInTheDocument()
+ expect(screen.getByText(/Consultas realizadas: buscar problemas/)).toBeInTheDocument()
+ expect(screen.getByText(/límite de búsqueda o contexto/)).toBeInTheDocument()
+ expect(chatApi.extract).not.toHaveBeenCalled(); expect(chatApi.answer).not.toHaveBeenCalled()
+})
 it('renders evidence as text, warns about bounded search and navigates by verified identifiers', async () => {
  chatApi.answer.mockResolvedValue({ estado: 'CON_FUENTES', texto: '<script>Texto literal</script>', fuentes: [source], busquedaAcotada: true })
  show()

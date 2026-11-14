@@ -85,7 +85,7 @@ terminal: Spring Boot no carga automáticamente ese archivo. El valor por defect
 | `IA_ENABLED` | `false` | Habilita las llamadas de IA |
 | `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Servidor local |
 | `OLLAMA_CHAT_MODEL` | `granite4.2:3b` | Conversación |
-| `OLLAMA_AGENT_MODEL` | `granite4.2:3b` | Modelo propuesto para el agente |
+| `OLLAMA_AGENT_MODEL` | `granite4.2:3b` | Modelo del agente textual con protocolo controlado |
 | `OLLAMA_VISION_MODEL` | `qwen2.5vl:3b` | Reservado; no instalado ni utilizado |
 | `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma:300m` | Embeddings locales; instalado en etapa 4 |
 | `OLLAMA_TIMEOUT` | `120s` | Presupuesto total por operación, máximo 180 s |
@@ -196,3 +196,12 @@ Los ocho parámetros, contratos, límites y reglas de abstención están en
 La interfaz conversacional de etapa 6 se describe en [CHATBOT.md](CHATBOT.md).
 Esta integración no entrena ni
 modifica los pesos de los modelos: recupera fuentes y valida una cita literal.
+
+## Agente textual: etapa 7
+
+El agente usa `OLLAMA_AGENT_MODEL=granite4.2:3b` y las mismas interfaces HTTP
+locales existentes, sin frameworks adicionales. Se habilita con `AGENT_ENABLED`
+y requiere RAG e IA activos. El protocolo JSON permite elegir únicamente tres
+herramientas de consulta y validar IDs obtenidos durante la misma ejecución.
+La pantalla **Agente textual** no recibe archivos ni imágenes. Ver
+[AGENTE_TEXTUAL.md](AGENTE_TEXTUAL.md) para API, activación, límites y seguridad.

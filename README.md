@@ -19,6 +19,7 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Extracción local de PDF, DOCX y JPG: etapa 3 de IA](docs/CHATBOT_MULTIMODAL.md)
 - [Índice incremental, búsqueda híbrida y respuestas RAG: etapas 4 y 5 de IA](docs/ARQUITECTURA_RAG.md)
 - [Chatbot dentro de la aplicación: etapa 6 de IA](docs/CHATBOT.md)
+- [Agente textual con herramientas de consulta: etapa 7 de IA](docs/AGENTE_TEXTUAL.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -40,15 +41,15 @@ Se verificó con 39 pruebas backend y 56 frontend. Consultar
 La etapa 2 incorpora clientes Java para conversación, JSON estructurado y
 embeddings, con límites, errores controlados y diagnóstico para administradores.
 El modelo de conversación seleccionado es **`granite4.2:3b`, ejecutado localmente
-con Ollama**. También queda configurado como candidato del agente, cuya selección
-de herramientas requiere validación adicional en la etapa 7. El cliente acepta
+con Ollama**. También se utiliza para el agente textual de etapa 7, con selección
+de herramientas y argumentos controlados por Java. El cliente acepta
 solo conexiones locales y rechaza modelos remotos; no envía consultas a servicios
 externos de IA. No se descargaron modelos durante la etapa 2.
 
 El modelo local de embeddings es `embeddinggemma:300m`, instalado en la etapa 4.
 `qwen2.5vl:3b` queda reservado para visión opcional, sin instalar ni utilizar.
-El chatbot recibirá documentos e imágenes en su etapa de interfaz; el agente
-será exclusivamente textual, no analizará imágenes ni generará tickets.
+El chatbot admite documentos e imágenes mediante extracción y OCR; el agente
+es exclusivamente textual, no analiza imágenes ni genera tickets.
 
 La etapa 3 de IA agrega `POST /api/documentos/extraer`: extrae texto de PDF y
 DOCX y usa Tesseract local para JPG/JPEG y páginas PDF escaneadas. El endpoint
@@ -75,7 +76,14 @@ La etapa 6 permite escribir o pegar una consulta y extraer texto de PDF, DOCX o
 JPG/JPEG para revisarlo antes de consultar. Muestra respuestas, fuentes, navegación
 al problema y descarga autenticada del documento original. El historial permanece
 en memoria, con cancelación y controles de longitud. Ver [CHATBOT.md](docs/CHATBOT.md)
-para uso, activación, privacidad y límites. El agente textual queda para la etapa 7.
+para uso, activación, privacidad y límites.
+
+La etapa 7 agrega **Agente textual**, con tres herramientas de solo lectura:
+buscar problemas, obtener soluciones e identificar la principal, y recuperar pasos
+ordenados. El modelo elige acciones e IDs; Java valida su alcance y compone la
+respuesta con fuentes vigentes. No acepta archivos ni imágenes, no modifica
+registros y no ejecuta acciones externas. Ver [AGENTE_TEXTUAL.md](docs/AGENTE_TEXTUAL.md)
+para configuración, límites y pruebas. La validación integral corresponde a la etapa 8.
 
 La Etapa 1 incluye:
 

@@ -11,6 +11,14 @@ export function extractedText(document) {
 export function problemPath(source) {
   return Number.isSafeInteger(source.problemaId) && source.problemaId > 0 ? `/problemas/${source.problemaId}` : null
 }
+export function solutionPath(source) {
+  const path = problemPath(source)
+  return path && Number.isSafeInteger(source.solucionId) && source.solucionId > 0 ? `${path}#solucion-${source.solucionId}` : null
+}
+export function solutionTarget(hash) {
+  const id = Number(hash?.match(/^#solucion-([1-9]\d*)$/)?.[1])
+  return Number.isSafeInteger(id) && id > 0 ? id : null
+}
 export function downloadName(source) {
   const title = String(source.titulo || 'Fuente').replace(/[\\/:*?"<>|\p{Cc}]/gu, '_').slice(0, 100)
   return `${title}-archivo-${source.archivoId}`

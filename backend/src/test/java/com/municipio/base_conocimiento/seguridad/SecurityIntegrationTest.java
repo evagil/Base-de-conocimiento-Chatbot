@@ -29,6 +29,10 @@ class SecurityIntegrationTest{
     mvc.perform(post(ruta).header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content("{\"pregunta\":\"Error E17\"}"))
      .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.codigo").value("RAG_DESHABILITADO"));
   }
+  mvc.perform(post("/api/rag/agente").contentType(MediaType.APPLICATION_JSON).content("{\"pregunta\":\"E17\"}")).andExpect(status().isUnauthorized());
+  for(String token:java.util.List.of(adminToken,editorToken,lectorToken))
+   mvc.perform(post("/api/rag/agente").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content("{\"pregunta\":\"E17\"}"))
+    .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.codigo").value("AGENTE_DESHABILITADO"));
   mvc.perform(get("/api/ia/indice").header("Authorization","Bearer "+adminToken)).andExpect(status().isOk()).andExpect(jsonPath("$.habilitado").value(false));
   mvc.perform(get("/api/ia/indice").header("Authorization","Bearer "+lectorToken)).andExpect(status().isForbidden());
   mvc.perform(post("/api/ia/indice/reconstruir").header("Authorization","Bearer "+lectorToken)).andExpect(status().isForbidden());

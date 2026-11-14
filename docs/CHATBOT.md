@@ -15,7 +15,8 @@ en escritorio se abre como una ventana sobre el conocimiento existente.
    o más, según la carga y el modelo. No se promete una latencia determinada.
 3. Revisá la respuesta y su fuente. **Abrir problema** lleva al registro original;
    se muestran también los identificadores de solución y paso, y la página si
-   existe. **Descargar fuente** recupera un archivo privado con tu sesión.
+   existe. **Abrir solución** despliega la solución citada mediante su ancla interna.
+   **Descargar fuente** recupera un archivo privado con tu sesión.
 
 Cada turno es una consulta independiente. No hay memoria conversacional del
 modelo: para una nueva pregunta se debe incluir otra vez la descripción necesaria.
@@ -85,5 +86,6 @@ referencias, descarga autenticada y apertura desde la aplicación. Los contratos
 backend permanecen cubiertos por las 130 pruebas de etapa 5; esta etapa modifica
 el frontend. Ver comandos y resultados en [PRUEBAS_IA.md](PRUEBAS_IA.md).
 
-El agente textual con herramientas corresponde a la etapa 7. El chatbot de
-esta etapa no ejecuta herramientas ni modifica registros.
+El agente textual con herramientas está disponible por separado en la etapa 7;
+ver [AGENTE_TEXTUAL.md](AGENTE_TEXTUAL.md). El chatbot de esta etapa no ejecuta
+herramientas ni modifica registros.

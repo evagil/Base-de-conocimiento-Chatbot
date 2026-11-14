@@ -60,6 +60,14 @@ if (Test-Path $ragConfigPath) {
         [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
     }
 }
+$agentConfigPath = Join-Path $localRoot 'agente-config.json'
+if (Test-Path $agentConfigPath) {
+    $agentConfig = Get-Content -LiteralPath $agentConfigPath -Raw | ConvertFrom-Json
+    foreach ($property in $agentConfig.PSObject.Properties) {
+        if ($property.Name -notin @('AGENT_ENABLED', 'AGENT_MAX_ITERATIONS', 'AGENT_TIMEOUT')) { throw "Variable de agente no admitida: $($property.Name)" }
+        [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
+    }
+}
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
     $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
     $jar = Join-Path $localRoot 'backend.jar'

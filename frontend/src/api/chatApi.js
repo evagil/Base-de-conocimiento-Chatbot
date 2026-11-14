@@ -1,6 +1,7 @@
 import { http } from './httpClient.js'
 
 export const chatApi = {
+  agent: (pregunta, signal) => http.post('/api/rag/agente', { pregunta }, { signal, timeout: 660000 }).then(r => r.data),
   answer: (pregunta, signal) => http.post('/api/rag/responder', { pregunta }, { signal, timeout: 300000 }).then(r => r.data),
   extract: (archivo, signal) => {
     const form = new FormData()
