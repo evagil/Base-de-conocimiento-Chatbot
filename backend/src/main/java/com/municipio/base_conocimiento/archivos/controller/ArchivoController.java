@@ -15,7 +15,8 @@ import java.util.List;
 @RestController
 public class ArchivoController {
     private final ArchivoService service;
-    public ArchivoController(ArchivoService service){this.service=service;}
+    private final com.municipio.base_conocimiento.archivos.privacidad.ProtectorImagenes protector;
+    public ArchivoController(ArchivoService service,com.municipio.base_conocimiento.archivos.privacidad.ProtectorImagenes protector){this.service=service;this.protector=protector;}
     @PostMapping(value="/api/problemas/{id}/imagenes",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ArchivoResponse> problema(@PathVariable Long id,@RequestPart("archivo") MultipartFile archivo,
             @RequestParam String textoAlternativo,@RequestParam(defaultValue="0") int orden){return creada(service.cargar(Propietario.PROBLEMA,id,archivo,textoAlternativo,orden));}
@@ -28,7 +29,14 @@ public class ArchivoController {
     public ResponseEntity<ArchivoResponse> paso(@PathVariable Long id,@RequestPart("archivo") MultipartFile archivo,
             @RequestParam String textoAlternativo,@RequestParam(defaultValue="0") int orden){return creada(service.cargar(Propietario.PASO,id,archivo,textoAlternativo,orden));}
     @GetMapping("/api/pasos/{id}/imagenes") public List<ArchivoResponse> imagenesPaso(@PathVariable Long id){return service.listar(Propietario.PASO,id);}
-    @GetMapping("/api/archivos/{id}/contenido") public ResponseEntity<byte[]> contenido(@PathVariable Long id){var c=service.contenido(id);String seguro=c.nombre().replace("\"","");return ResponseEntity.ok().contentType(MediaType.parseMediaType(c.mime())).cacheControl(CacheControl.noCache()).header(HttpHeaders.CONTENT_DISPOSITION,(c.mime().startsWith("image/")?"inline":"attachment")+"; filename*=UTF-8''"+java.net.URLEncoder.encode(seguro,StandardCharsets.UTF_8)).header("X-Content-Type-Options","nosniff").body(c.bytes());}
+    @GetMapping("/api/archivos/{id}/contenido") public ResponseEntity<byte[]> contenido(@PathVariable Long id){
+        var c=service.contenido(id);boolean imagen=c.mime().startsWith("image/");
+        byte[] bytes=imagen?protector.proteger(c.bytes()):c.bytes();String mime=imagen?"image/png":c.mime();
+        String seguro=imagen?"imagen-protegida.png":c.nombre().replace("\"","");
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(mime)).cacheControl(CacheControl.noStore())
+            .header(HttpHeaders.CONTENT_DISPOSITION,(imagen?"inline":"attachment")+"; filename*=UTF-8''"+java.net.URLEncoder.encode(seguro,StandardCharsets.UTF_8))
+            .header("X-Content-Type-Options","nosniff").header("X-Imagen-Protegida",imagen?"automatica":"no-aplica").body(bytes);
+    }
     @PutMapping("/api/archivos/{id}") public ArchivoResponse actualizar(@PathVariable Long id,@RequestParam String textoAlternativo,@RequestParam(defaultValue="0") int orden, @RequestParam long version){return service.actualizar(id,textoAlternativo,orden,version);}
     @PatchMapping("/api/archivos/{id}/activo") public ArchivoResponse activo(@PathVariable Long id,@Valid @RequestBody EstadoActivoRequest r, @RequestParam long version){return service.cambiarActivo(id,r.activo(),version);}
     @PostMapping(value="/api/problemas/{id}/adjuntos",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)

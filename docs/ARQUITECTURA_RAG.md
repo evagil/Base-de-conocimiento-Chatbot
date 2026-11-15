@@ -104,7 +104,8 @@ grande: se registra un fallo explícito para revisión y reintento.
 de `granite4.2:3b` para conversación. Se instaló desde la
 [biblioteca oficial de Ollama](https://ollama.com/library/embeddinggemma:300m).
 La descarga ronda 622 MB. Las llamadas pasan por el cliente local de la etapa 2,
-con límites, un solo turno de IA y `keep_alive=0`. No se descargan modelos desde
+con límites y un solo turno de IA. Los embeddings se descargan después de cada
+operación; la conversación puede permanecer cargada 120s. No se descargan modelos desde
 el indexador ni durante los tests. El texto documental sigue siendo datos no
 confiables y no se ejecutan sus instrucciones.
 
@@ -257,15 +258,18 @@ comprobaciones reflejan el estado leído; un cambio posterior a la última lectu
 se verá en la próxima consulta. Pausar el barrido no cambia la huella del índice
 creado: conserva compatibilidad con los índices de la etapa 4.
 
-El RAG es **extractivo**: el modelo recibe pregunta y fuentes como datos no
-confiables y debe producir JSON con una única cita de entre 15 y 160 caracteres,
-o una lista vacía. El backend valida el esquema y exige que el extracto aparezca
-literalmente dentro del texto efectivamente enviado al modelo. Compone una
+El RAG es **extractivo**: el servidor propone hasta nueve ventanas literales de
+entre 15 y 160 caracteres, acotadas por el presupuesto de contexto. El modelo
+recibe pregunta y ventanas como datos no confiables y elige `{"cita":n}`;
+cero indica abstención. El backend valida el entero, el rango y la pertenencia
+literal de la ventana seleccionada a la fuente vigente. Compone una
 respuesta breve y agrega la referencia verificada. No admite prosa libre,
 herramientas, URLs del modelo ni hechos externos. Esta decisión favorece la
 trazabilidad con un modelo pequeño y 128 tokens de salida; no demuestra por sí
 sola que toda cita elegida responda correctamente la intención de la pregunta.
-Una evaluación amplia de relevancia queda para la validación integral de etapa 8.
+La etapa 8 agrega una [evaluación sintética reproducible](VALIDACION_INTEGRAL.md).
+Medir la relevancia sobre el catálogo real requiere además consultas y fuentes
+esperadas revisadas por personas que conozcan ese catálogo.
 
 Sin resultados no se llama al modelo de conversación. Sin evidencia verificable
 se devuelve información insuficiente y una lista de fuentes vacía. Estados:

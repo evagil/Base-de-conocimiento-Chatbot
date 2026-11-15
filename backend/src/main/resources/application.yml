@@ -93,6 +93,7 @@ app:
     modelo-multimodal: ${OLLAMA_VISION_MODEL:qwen2.5vl:3b}
     modelo-embeddings: ${OLLAMA_EMBEDDING_MODEL:embeddinggemma:300m}
     timeout: ${OLLAMA_TIMEOUT:120s}
+    permanencia-modelo: ${OLLAMA_KEEP_ALIVE:120s}
     conexion-timeout: ${OLLAMA_CONNECT_TIMEOUT:2s}
     contexto: ${OLLAMA_CONTEXT_TOKENS:2048}
     max-prompt-chars: ${IA_MAX_PROMPT_CHARS:4000}

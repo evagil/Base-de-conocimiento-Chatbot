@@ -18,7 +18,13 @@ import Star from '@mui/icons-material/Star'
 import AttachmentPanel from './AttachmentPanel.jsx'
 import ImageGallery from './ImageGallery.jsx'
 
-const RichHtml=({html})=><Box className="rich-content" dangerouslySetInnerHTML={{__html:DOMPurify.sanitize(html)}}/>
+const RichHtml=({html})=><>
+  <Box className="rich-content" dangerouslySetInnerHTML={{__html:DOMPurify.sanitize(html||'',{
+    ALLOWED_TAGS:['p','br','strong','b','em','i','s','strike','u','code','pre','h1','h2','h3','ul','ol','li','blockquote','a','span','div','table','thead','tbody','tr','th','td','hr'],
+    ALLOWED_ATTR:['href','title','target','rel','colspan','rowspan','class']
+  })}}/>
+  {/<\s*(?:img|picture|svg|video|object|embed|iframe)\b/i.test(html||'')&&<Alert severity="info">Imagen incrustada oculta. Para verla protegida, adjuntala a la galería de imágenes.</Alert>}
+</>
 export default function ProblemDetail({ detail, onEditSolution, onRemoveSolution, removing = false, imageRevision, targetSolutionId, targetRevision }) {
   const problemId=detail?.problema?.id
   const solutionIds=detail?.soluciones?.map(s=>s.id).join(',')

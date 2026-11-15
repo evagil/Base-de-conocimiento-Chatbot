@@ -53,6 +53,7 @@ export default function ImageGallery({ owner, id, title = 'Imágenes', revision 
   if (!visible.length) return null
   return <Box sx={{ mt: 2 }}>
     <Typography variant="subtitle2" sx={{ mb: 1 }}>{title}</Typography>
+    <Typography variant="caption" color="text.secondary">Vista con ocultación automática de datos sensibles. Revisá la imagen antes de compartirla.</Typography>
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
       {visible.map(img => <ButtonBase key={img.id} onClick={() => setSelectedId(img.id)}
         aria-label={`Ampliar imagen: ${img.textoAlternativo}`}

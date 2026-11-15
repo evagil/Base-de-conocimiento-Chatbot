@@ -28,8 +28,14 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<bc.build.directory>${project.basedir}/target</bc.build.directory>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-webp</artifactId>
+			<version>3.15.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
 			<artifactId>pdfbox</artifactId>
@@ -122,6 +128,7 @@
 	</dependencies>
 
 	<build>
+		<directory>${bc.build.directory}</directory>
 		<plugins>
 			<plugin>
 				<groupId>org.jacoco</groupId>

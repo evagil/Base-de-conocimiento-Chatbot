@@ -63,7 +63,14 @@ function Workspace(){
   const [imageRevision,setImageRevision]=useState(0)
   const {id}=useParams();const navigate=useNavigate();const state=useKnowledge();const [query,setQuery]=useState('');const [statusFilter,setStatusFilter]=useState('SIN_ARCHIVADOS');const [mobile,setMobile]=useState(false);const [problemForm,setProblemForm]=useState(null);const [editingSolution,setEditingSolution]=useState(null);const [solutionForm,setSolutionForm]=useState(false);const [imageForm,setImageForm]=useState(false);const [hierarchyForm,setHierarchyForm]=useState('');const [adminOpen,setAdminOpen]=useState(false);const [accountOpen,setAccountOpen]=useState(()=>Boolean(auth.user?.passwordTemporal));const [notice,setNotice]=useState('')
   useEffect(()=>{if(auth.user?.passwordTemporal)setAccountOpen(true)},[auth.user?.passwordTemporal])
-  useEffect(()=>{if(id&&Number(id)!==state.problem?.problema?.id)state.selectProblem(Number(id))},[id,state.selectProblem,state.problem?.problema?.id])
+  const requestedLocation=useRef(null)
+  useEffect(()=>{
+    if(!id||(requestedLocation.current===location.key&&Number(id)===state.problem?.problema?.id))return
+    if(Number(id)!==state.problem?.problema?.id||solutionTarget(location.hash)){
+      requestedLocation.current=location.key
+      state.selectProblem(Number(id))
+    }
+  },[id,state.selectProblem,state.problem?.problema?.id,location.hash,location.key])
   const filtered=useMemo(()=>filterTree(filterByStatus(state.tree,auth.canEdit?statusFilter:'PUBLICADO'),query),[state.tree,query,auth.canEdit,statusFilter]);const selected=state.problem?.problema
   const hasActiveFilters=query.trim()!==''||(auth.canEdit&&statusFilter!=='SIN_ARCHIVADOS')
   const clearFilters=()=>{setQuery('');setStatusFilter('SIN_ARCHIVADOS')}

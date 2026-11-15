@@ -11,6 +11,12 @@ decide qué problema explorar, qué soluciones leer y de cuál obtener los pasos
 Java valida esas decisiones y compone la respuesta final con los datos leídos.
 El modelo no genera SQL ni el texto de la solución final.
 
+El modo Agente conserva la elección de soluciones y pasos mediante su modelo,
+incluso cuando el título parece inequívoco. El modo Chatbot conserva su propio
+servicio y modelo de conversación. No se usa una respuesta automática por título
+para omitir esas decisiones. Sin evidencia utilizable se mantienen los controles
+de abstención del flujo seleccionado.
+
 ## Herramientas permitidas
 
 | Herramienta | Argumento | Lectura autorizada |
@@ -19,14 +25,17 @@ El modelo no genera SQL ni el texto de la solución final.
 | `obtener_solucion` | ID de un problema encontrado en esta consulta | Hasta cinco soluciones activas; indica principal y orden |
 | `obtener_pasos` | ID de una solución leída en esta consulta | Hasta veinte pasos activos, ordenados por orden e ID |
 
-El primer paso solo permite buscar. Después el modelo elige entre los IDs
+El servidor ejecuta automáticamente la búsqueda inicial, que es obligatoria,
+sin pedir al modelo que confirme esa única opción. Después el modelo elige entre los IDs
 recuperados, puede explorar otro problema o solución y puede abstenerse. No puede
 recuperar un ID recordado de una consulta anterior ni repetir una misma llamada.
 El protocolo incluye `finalizar` con ID `0` para abstenerse. Es una orden de
 control, no una cuarta herramienta con acceso al sistema. Elegir `obtener_pasos`
 con un ID autorizado expresa la elección de solución: Java lee esos pasos,
 revalida las fuentes y compone la respuesta, aunque la lista esté vacía. No hace
-una cuarta llamada al modelo para repetir una decisión que ya quedó en ese ID.
+otra llamada al modelo para repetir una decisión que ya quedó en ese ID.
+El recorrido habitual usa dos inferencias: elegir el problema y elegir la solución.
+Si la búsqueda no encuentra fuentes, no se llama al modelo de conversación.
 
 El esquema JSON de cada turno contiene los nombres e IDs disponibles. El servidor
 vuelve a comprobar la combinación exacta, tipos enteros, campos permitidos,
@@ -35,16 +44,15 @@ SQL, campos extra, IDs no disponibles o razonamiento libre no se ejecuta.
 
 ```mermaid
 flowchart TD
-    Texto[Descripción textual autenticada] --> Opciones[Acciones disponibles]
+    Texto[Descripción textual autenticada] --> Buscar[buscar_problema automático]
+    Buscar --> Datos[Resultados autorizados]
     Opciones --> Modelo[Ollama elige JSON]
     Modelo --> Validar[Java valida nombre e ID]
-    Validar --> Buscar[buscar_problema]
     Validar --> Soluciones[obtener_solucion]
     Validar --> Pasos[obtener_pasos]
-    Buscar --> Datos[Resultados autorizados]
     Soluciones --> Datos
     Pasos --> Vigencia
-    Datos --> Opciones
+    Datos --> Opciones[Acciones disponibles]
     Validar --> Abstener[Finalizar sin solución]
     Vigencia[Releer fuentes y comparar]
     Vigencia --> Respuesta[Solución y pasos con referencias]
@@ -75,7 +83,8 @@ al presupuesto global de prompts y puede truncarse. En ese caso la respuesta
 indica `busquedaAcotada=true` y la pantalla advierte el límite de búsqueda o contexto.
 La respuesta final, si existe, usa el texto completo de las filas admitidas.
 
-Cada solicitud admite como máximo seis decisiones del modelo por defecto y una
+Cada solicitud admite como máximo seis iteraciones por defecto, incluyendo la
+búsqueda inicial automática, y una
 sola ejecución del agente a la vez. Comparte el turno de Ollama con chatbot e
 indexador: puede devolver ocupado. El timeout total se comprueba entre operaciones
 y antes de entregar resultados. Una inferencia iniciada puede terminar después
@@ -96,8 +105,10 @@ y pasos. **Abrir solución** navega a `/problemas/{id}#solucion-{id}`, despliega
 la solución citada y la lleva a la vista, incluso cuando no es la principal.
 Las rutas y anclas se construyen con IDs numéricos válidos.
 Es una composición determinista de evidencia; no garantiza que el modelo
-haya elegido el problema más relevante. Esa precisión requiere una evaluación más
-amplia en la etapa 8. El esquema restringido no convierte el modelo en infalible.
+haya elegido el problema más relevante. La etapa 8 agrega una evaluación sintética
+reproducible, descrita en [VALIDACION_INTEGRAL.md](VALIDACION_INTEGRAL.md). La precisión
+sobre el catálogo real requiere casos esperados revisados por personas que lo
+conozcan. El esquema restringido no convierte el modelo en infalible.
 
 Cuando no hay evidencia utilizable, la respuesta textual es:
 

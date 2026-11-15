@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "fuentes": [
+    {
+      "clave": "impresion",
+      "titulo": "Error E17 al imprimir desde la aplicación",
+      "descripcion": "La aplicación muestra E17 y no permite imprimir documentos.",
+      "solucion": "Cerrar y volver a abrir la aplicación para corregir E17.",
+      "pasos": ["Cerrar la aplicación de impresión.", "Volver a abrir la aplicación y repetir la impresión."]
+    },
+    {
+      "clave": "wifi",
+      "titulo": "Error R42 de conexión wifi",
+      "descripcion": "El equipo pierde la conexión inalámbrica y muestra R42.",
+      "solucion": "Desconectar y volver a conectar la red wifi del equipo para corregir R42.",
+      "pasos": ["Desconectar la red wifi desde el panel de conexiones.", "Seleccionar la red y volver a conectarse."]
+    },
+    {
+      "clave": "acceso",
+      "titulo": "Error AUTH09 al recuperar la contraseña",
+      "descripcion": "El usuario olvidó su clave de acceso y no puede ingresar a su cuenta.",
+      "solucion": "Usar la opción de recuperar contraseña y seguir el enlace de restablecimiento para resolver AUTH09.",
+      "pasos": ["Seleccionar la opción de recuperar contraseña.", "Abrir el enlace de restablecimiento de la cuenta."]
+    }
+  ],
+  "consultas": [
+    {"id": "codigo-impresion", "texto": "¿Cómo corregir E17 al imprimir?", "esperado": "impresion"},
+    {"id": "parafrasis-impresion", "texto": "La aplicación no deja imprimir, ¿qué debo reiniciar?", "esperado": "impresion"},
+    {"id": "codigo-wifi", "texto": "La conexión inalámbrica R42 se corta continuamente.", "esperado": "wifi"},
+    {"id": "parafrasis-wifi", "texto": "Mi equipo perdió la conexión wifi.", "esperado": "wifi"},
+    {"id": "codigo-acceso", "texto": "Olvidé mi clave AUTH09, ¿cómo recupero el acceso?", "esperado": "acceso"},
+    {"id": "parafrasis-acceso", "texto": "¿Cómo restablecer la contraseña de mi cuenta?", "esperado": "acceso"},
+    {"id": "codigo-distinto", "texto": "¿Cómo corregir E170?", "esperado": ""},
+    {"id": "fuera-de-dominio", "texto": "¿Qué alimento corresponde a un ornitorrinco?", "esperado": ""}
+  ]
+}

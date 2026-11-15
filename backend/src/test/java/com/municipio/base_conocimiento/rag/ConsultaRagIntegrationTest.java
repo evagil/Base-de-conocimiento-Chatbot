@@ -56,8 +56,8 @@ class ConsultaRagIntegrationTest {
   when(ollama.conversar(any(),anyList(),anyMap())).thenAnswer(i->{
    List<MensajeIa> mensajes=i.getArgument(1);String prompt=mensajes.getLast().contenido();
    int inicio=prompt.indexOf(cita);String anterior=prompt.substring(0,inicio);
-   int fuente=Integer.parseInt(anterior.substring(anterior.lastIndexOf("[F")+2,anterior.lastIndexOf("]")));
-   return new RespuestaIa(ia.modeloConversacion(),"{\"citas\":[{\"fuente\":"+fuente+",\"extracto\":\""+cita+"\"}]}",1,10);
+   int fuente=Integer.parseInt(anterior.substring(anterior.lastIndexOf("[C")+2,anterior.lastIndexOf("]")));
+   return new RespuestaIa(ia.modeloConversacion(),"{\"cita\":"+fuente+"}",1,10);
   });
   var respuesta=respuestas.responder(codigo);assertThat(respuesta.estado()).isEqualTo("CON_FUENTES");
   assertThat(respuesta.fuentes()).hasSize(1);assertThat(respuesta.fuentes().getFirst().solucionId()).isEqualTo(solucion);
@@ -89,7 +89,7 @@ class ConsultaRagIntegrationTest {
   assertThat(herramientas.soluciones(problema).getFirst().principal()).isTrue();
   assertThat(herramientas.pasos(solucion)).extracting(com.municipio.base_conocimiento.agente.HerramientasAgenteRepository.Paso::orden).containsExactly(2,9);
   var llamadas=new java.util.concurrent.atomic.AtomicInteger();
-  when(ollama.conversar(any(),anyList(),anyMap())).thenAnswer(i->{int n=llamadas.getAndIncrement();String nombre=n==0?"buscar_problema":n==1?"obtener_solucion":n==2?"obtener_pasos":"finalizar";long id=n==0?0:n==1?problema:solucion;
+  when(ollama.conversar(any(),anyList(),anyMap())).thenAnswer(i->{int n=llamadas.getAndIncrement();String nombre=n==0?"obtener_solucion":n==1?"obtener_pasos":"finalizar";long id=n==0?problema:solucion;
    return new RespuestaIa(ia.modeloAgente(),"{\"herramienta\":\""+nombre+"\",\"id\":"+id+"}",1,10);
   });
   var resultado=agente.consultar(codigo);assertThat(resultado.estado()).isEqualTo("CON_FUENTES");assertThat(resultado.texto()).contains("principal","1. Primero","2. Segundo");

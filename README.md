@@ -20,6 +20,7 @@ Aplicación interna para organizar áreas, subáreas, problemas y sus soluciones
 - [Índice incremental, búsqueda híbrida y respuestas RAG: etapas 4 y 5 de IA](docs/ARQUITECTURA_RAG.md)
 - [Chatbot dentro de la aplicación: etapa 6 de IA](docs/CHATBOT.md)
 - [Agente textual con herramientas de consulta: etapa 7 de IA](docs/AGENTE_TEXTUAL.md)
+- [Validación integral y evaluación reproducible: etapa 8 de IA](docs/VALIDACION_INTEGRAL.md)
 
 Cada etapa debe terminar con pruebas automatizadas. Para la integración de IA,
 el umbral operativo se eleva a **92 % de líneas**, superando el 91 % solicitado.
@@ -27,7 +28,7 @@ El alcance de la medición del frontend está explicado en la guía de pruebas.
 
 ## Estado actual
 
-Actualizado el 13/11/2026. Las etapas originales 1 a 4 están implementadas. El esquema
+Actualizado el 14/11/2026. Las etapas originales 1 a 4 están implementadas. El esquema
 incluye migraciones V1 a V12 en PostgreSQL. La etapa 5 de IA incorpora una API de
 búsqueda híbrida y respuestas con citas verificadas. Actualmente el árbol se filtra
 por área, subárea, título y etiquetas en el navegador. La etapa 6 agrega la
@@ -83,7 +84,38 @@ buscar problemas, obtener soluciones e identificar la principal, y recuperar pas
 ordenados. El modelo elige acciones e IDs; Java valida su alcance y compone la
 respuesta con fuentes vigentes. No acepta archivos ni imágenes, no modifica
 registros y no ejecuta acciones externas. Ver [AGENTE_TEXTUAL.md](docs/AGENTE_TEXTUAL.md)
-para configuración, límites y pruebas. La validación integral corresponde a la etapa 8.
+para configuración, límites y pruebas.
+
+La etapa 8 agrega una evaluación versionada con corpus sintético, HTTP y JWT
+reales, PostgreSQL efímero y los modelos locales. Mide recuperación y abstención,
+comprueba extracción, citas, herramientas y ausencia de escrituras en conocimiento.
+Incluye correcciones de navegación a fuentes y descarte de respuestas antiguas.
+Ver [VALIDACION_INTEGRAL.md](docs/VALIDACION_INTEGRAL.md) para ejecutar el cierre,
+interpretar sus resultados y distinguirlos de una evaluación del catálogo privado.
+
+El cierre técnico del 14/11/2026 aprobó 153 casos backend y 84 frontend, lint y
+build. La muestra sintética recuperó los seis positivos en primera posición y
+dejó vacías las dos negativas. Estos resultados no estiman la precisión del
+catálogo privado; el detalle y los límites están en la guía de validación.
+
+Agente y Chatbot respetan el flujo elegido; no se sustituye la intervención del
+modelo por una respuesta automática basada en el título.
+
+El agente ejecuta la búsqueda inicial sin
+inferencia y conserva el modelo durante 120 segundos entre llamadas.
+Además se compactó el contexto del agente y el chatbot elige extractos literales
+mediante una respuesta breve del modelo. El último ensayo HTTP midió 54,88 segundos
+para el chatbot y 75,35 para el agente, frente a 83,24 y 122,32 anteriores.
+La pregunta real de RRHH tardó 118,79 segundos en la medición del servicio con
+base de solo lectura y dos decisiones del modelo; no hay un máximo de 75 segundos
+para cualquier consulta. Configuración, alcance de las mediciones y límites en
+[RENDIMIENTO_IA.md](docs/RENDIMIENTO_IA.md).
+
+Las imágenes guardadas se entregan como copias protegidas: OCR local oculta
+importes y campos rotulados con nombres, contribuyentes, proveedores o razón
+social. Se conservan los originales y no se muestra la imagen si no puede
+prepararse su vista protegida. Alcance y límites de la detección en
+[PROTECCION_IMAGENES.md](docs/PROTECCION_IMAGENES.md).
 
 La Etapa 1 incluye:
 

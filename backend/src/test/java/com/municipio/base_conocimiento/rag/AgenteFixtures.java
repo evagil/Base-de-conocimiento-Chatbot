@@ -25,5 +25,5 @@ class AgenteFixtures {
  AgenteConsulta servicio(){return new AgenteConsulta(config,ConsultaRagFixtures.config(true,true),ConsultaRagFixtures.ia(),busqueda,vigencia,repo,cliente,new ObjectMapper());}
  RespuestaIa accion(String herramienta,long id){return salida("{\"herramienta\":\""+herramienta+"\",\"id\":"+id+"}");}
  RespuestaIa salida(String texto){return new RespuestaIa("granite4.2:3b",texto,1,10);}
- void cadena(){when(cliente.conversar(any(),anyList(),anyMap())).thenReturn(accion("buscar_problema",0),accion("obtener_solucion",7),accion("obtener_pasos",8));}
+ void cadena(){when(cliente.conversar(any(),anyList(),anyMap())).thenReturn(accion("obtener_solucion",7),accion("obtener_pasos",8));}
 }

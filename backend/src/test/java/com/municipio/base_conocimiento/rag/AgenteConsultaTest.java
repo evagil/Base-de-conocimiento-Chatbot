@@ -14,31 +14,39 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
 class AgenteConsultaTest {
+ @Test void consultaDocumentalConSolucionPrincipalTambienRequiereAlModelo(){
+  var f=new AgenteFixtures();f.cadena();String pregunta="¿Desde qué opción puedo crear un servicio? Mostrame la fuente.";
+  var r=f.servicio().consultar(pregunta);
+  assertThat(r.estado()).isEqualTo("CON_FUENTES");assertThat(r.modelo()).isEqualTo(ConsultaRagFixtures.ia().modeloAgente());
+  verify(f.busqueda).buscar(pregunta);
+  verify(f.cliente,times(2)).conversar(eq(ClienteConversacion.Uso.AGENTE),anyList(),anyMap());
+ }
  @Test void decideHerramientasYComponeSoloSolucionYPasosLeidos(){
   var f=new AgenteFixtures();f.cadena();var resultado=f.servicio().consultar("¿Cómo corregir E17?");
   assertThat(resultado.estado()).isEqualTo("CON_FUENTES");assertThat(resultado.texto()).contains("principal",ConsultaRagFixtures.EVIDENCIA,"1. Cerrar","2. Abrir");
   assertThat(resultado.herramientas()).extracting(ResultadoAgente.Ejecucion::nombre).containsExactly("buscar_problema","obtener_solucion","obtener_pasos");
   assertThat(resultado.fuentes()).hasSize(3).allSatisfy(s->assertThat(s.enlace()).isEqualTo("/problemas/7"));
-  verify(f.cliente,times(3)).conversar(eq(ClienteConversacion.Uso.AGENTE),argThat(m->m.getFirst().contenido().contains("no confiables")),anyMap());
+  verify(f.cliente,times(2)).conversar(eq(ClienteConversacion.Uso.AGENTE),argThat(m->m.getFirst().contenido().contains("no confiables")),anyMap());
  }
  @Test void rechazaHerramientasArbitrariasIdsAjenosYSchemasInvalidos(){
-  for(String texto:List.of("{","null","[]","{\"herramienta\":\"ejecutar_sql\",\"id\":0}","{\"herramienta\":\"buscar_problema\",\"id\":-1}","{\"herramienta\":\"obtener_pasos\",\"id\":8}","{\"herramienta\":2,\"id\":0}","{\"herramienta\":\"buscar_problema\",\"id\":0.5}","{\"herramienta\":\"buscar_problema\",\"id\":999999999999999999999999}","{\"herramienta\":\"buscar_problema\",\"id\":0,\"sql\":\"DROP\"}")){
+  for(String texto:List.of("{","null","[]","{\"herramienta\":\"ejecutar_sql\",\"id\":0}","{\"herramienta\":\"buscar_problema\",\"id\":-1}","{\"herramienta\":\"obtener_pasos\",\"id\":8}","{\"herramienta\":2,\"id\":0}","{\"herramienta\":\"buscar_problema\",\"id\":0.5}","{\"herramienta\":\"buscar_problema\",\"id\":999999999999999999999999}","{\"herramienta\":\"buscar_problema\",\"id\":0,\"sql\":\"DROP\"}",
+    "{\"herramienta\":\"ejecutar_sql\",\"id\":7,\"herramienta\":\"obtener_solucion\"}","{\"herramienta\":\"obtener_solucion\",\"id\":7} {}")){
    var f=new AgenteFixtures();when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.salida(texto));
-   var r=f.servicio().consultar("E17");assertThat(r.estado()).as(texto).isEqualTo("ACCION_INVALIDA");assertThat(r.texto()).isEqualTo(AgenteConsulta.SIN_SOLUCION);verifyNoInteractions(f.repo,f.busqueda);
+   var r=f.servicio().consultar("E17");assertThat(r.estado()).as(texto).isEqualTo("ACCION_INVALIDA");assertThat(r.texto()).isEqualTo(AgenteConsulta.SIN_SOLUCION);verifyNoInteractions(f.repo);verify(f.busqueda).buscar("E17");
   }
-  var f=new AgenteFixtures();when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.accion("buscar_problema",0),f.accion("obtener_solucion",999));
+  var f=new AgenteFixtures();when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.accion("obtener_solucion",999));
   assertThat(f.servicio().consultar("E17").estado()).isEqualTo("ACCION_INVALIDA");verifyNoInteractions(f.repo);
  }
  @Test void abstieneSinResultadosSinSolucionesOAlPedirFinalizar(){
   var f=new AgenteFixtures();f.cadena();when(f.busqueda.buscar(anyString())).thenReturn(new com.municipio.base_conocimiento.rag.service.BusquedaHibridaRag.Seleccion("SIN_COINCIDENCIAS","HIBRIDA",true,List.of()));
-  var r=f.servicio().consultar("E17");assertThat(r.fuentes()).isEmpty();assertThat(r.busquedaAcotada()).isTrue();verify(f.cliente).conversar(any(),anyList(),anyMap());
-  f=new AgenteFixtures();when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.accion("buscar_problema",0),f.accion("finalizar",0));
+  var r=f.servicio().consultar("E17");assertThat(r.fuentes()).isEmpty();assertThat(r.busquedaAcotada()).isTrue();verifyNoInteractions(f.cliente);
+  f=new AgenteFixtures();when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.accion("finalizar",0));
   assertThat(f.servicio().consultar("E17").estado()).isEqualTo("SIN_SOLUCION");
-  f=new AgenteFixtures();when(f.repo.soluciones(7)).thenReturn(List.of());when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.accion("buscar_problema",0),f.accion("obtener_solucion",7),f.accion("finalizar",0));
+  f=new AgenteFixtures();when(f.repo.soluciones(7)).thenReturn(List.of());when(f.cliente.conversar(any(),anyList(),anyMap())).thenReturn(f.accion("obtener_solucion",7),f.accion("finalizar",0));
   assertThat(f.servicio().consultar("E17").fuentes()).isEmpty();
  }
  @Test void descartaFuentesCambiadasAntesDuranteYDespuesDeLasHerramientas(){
-  for(int punto:List.of(1,2,6,7)){
+  for(int punto:List.of(1,2,5,6)){
    var f=new AgenteFixtures();f.cadena();var contador=new java.util.concurrent.atomic.AtomicInteger();when(f.vigencia.todas(anyList())).thenAnswer(i->contador.incrementAndGet()!=punto);
    assertThat(f.servicio().consultar("E17").estado()).isEqualTo("FUENTES_ACTUALIZADAS");
   }

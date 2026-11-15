@@ -9,6 +9,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -19,12 +21,22 @@ public class ClienteOllama implements ClienteConversacion, ClienteEmbeddings {
     private final ConfiguracionIa configuracion;
     private final HttpClient http;
     private final ObjectMapper json;
+    private final Duration permanencia;
     private final Semaphore operacion = new Semaphore(1);
 
     public ClienteOllama(ConfiguracionIa configuracion, @Qualifier("ollamaHttpClient") HttpClient http, ObjectMapper json) {
+        this(configuracion,http,json,Duration.ZERO);
+    }
+
+    @Autowired
+    public ClienteOllama(ConfiguracionIa configuracion, @Qualifier("ollamaHttpClient") HttpClient http, ObjectMapper json,
+            @Value("${app.ia.permanencia-modelo:120s}") Duration permanencia) {
+        if(permanencia==null || permanencia.isNegative() || permanencia.compareTo(Duration.ofMinutes(5))>0
+                || permanencia.getNano()!=0)throw new IllegalArgumentException("La permanencia del modelo debe estar entre 0 y 300 segundos enteros.");
         this.configuracion = configuracion;
         this.http = http;
         this.json = json;
+        this.permanencia=permanencia;
     }
 
     @Override public RespuestaIa conversar(Uso uso, List<MensajeIa> mensajes, Map<String, Object> esquema) {
@@ -52,7 +64,7 @@ public class ClienteOllama implements ClienteConversacion, ClienteEmbeddings {
             if (esquema != null) body.put("format", esquema);
             body.put("stream", false);
             body.put("think", false);
-            body.put("keep_alive", 0);
+            body.put("keep_alive", permanencia.isZero()?0:permanencia.toSeconds()+"s");
             body.put("options", Map.of("num_ctx", configuracion.contexto(), "num_predict", configuracion.maxOutputTokens(),
                     "num_thread", 2, "temperature", 0, "seed", 42));
             JsonNode respuesta = peticion("/api/chat", body, limite);

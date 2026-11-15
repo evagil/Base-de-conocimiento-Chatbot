@@ -28,8 +28,9 @@ El cliente verifica que esta última sea un objeto JSON; la validación específ
 de nombres de herramientas y argumentos corresponde a la etapa 7.
 
 Se utiliza `/api/chat` con `stream=false`, `think=false`, temperatura 0,
-semilla 42, contexto acotado y `keep_alive=0`. Los embeddings usan `/api/embed`
-con `truncate=false`. Estas opciones están documentadas en las APIs oficiales
+semilla 42 y contexto acotado. La conversación conserva el modelo hasta 120 segundos
+sin actividad (`OLLAMA_KEEP_ALIVE=120s`). Los embeddings usan `/api/embed`
+con `truncate=false` y `keep_alive=0`. Estas opciones están documentadas en las APIs oficiales
 de [conversación](https://docs.ollama.com/api/chat),
 [embeddings](https://docs.ollama.com/api/embed) y
 [salida estructurada](https://docs.ollama.com/capabilities/structured-outputs).

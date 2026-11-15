@@ -27,6 +27,12 @@ describe('main visual components',()=>{
     const detail={problema:{id:1,area:'A',subarea:'S',titulo:'Error',estado:'PUBLICADO',etiquetas:['red'],descripcionHtml:'<p>Detalle</p><script>alert(1)</script>',modificadoEn:'2026-01-01'},soluciones:[{id:2,titulo:'Reiniciar',principal:true,descripcionHtml:'<p>Solución</p>',pasos:[{id:3,orden:1,titulo:'Abrir',contenidoHtml:'<p>Panel</p>'}]}]}
     render(<ProblemDetail detail={detail}/>);expect(screen.getByText('Reiniciar')).toBeInTheDocument();expect(screen.getByText('Panel')).toBeInTheDocument();expect(document.querySelector('script')).toBeNull()
   })
+  it('hides embedded images and background URLs so they cannot bypass protected views',()=>{
+    const detail={problema:{id:1,area:'A',subarea:'S',titulo:'Error',estado:'PUBLICADO',etiquetas:[],descripcionHtml:'<p style="background-image:url(https://ejemplo.test/privada.png)">Detalle</p><img src="https://ejemplo.test/privada.png">'},soluciones:[{id:2,titulo:'Solución',principal:true,descripcionHtml:'<p>Contenido</p><img src="data:image/png;base64,dato">',pasos:[{id:3,orden:1,titulo:'Paso',contenidoHtml:'<p>Texto del paso</p><svg><image href="https://ejemplo.test/privada.png"/></svg>'}]}]}
+    render(<ProblemDetail detail={detail}/>);expect(document.querySelector('img,svg image')).toBeNull();expect(document.querySelector('.rich-content p')).not.toHaveAttribute('style')
+    expect(screen.getAllByText('Imagen incrustada oculta. Para verla protegida, adjuntala a la galería de imágenes.')).toHaveLength(3)
+    expect(screen.getByText('Texto del paso')).toBeInTheDocument();expect(detail.problema.descripcionHtml).toContain('<img')
+  })
   it('expands and scrolls to a nonprincipal solution selected by a source link',()=>{
     const detail={problema:{id:1,area:'A',subarea:'S',titulo:'Error',estado:'PUBLICADO',etiquetas:[],descripcionHtml:'<p>Detalle</p>'},soluciones:[{id:9,titulo:'Principal',principal:true,descripcionHtml:'<p>Primera</p>',pasos:[]},{id:10,titulo:'Secundaria',principal:false,descripcionHtml:'<p>Segunda</p>',pasos:[]}]}
     const original=Element.prototype.scrollIntoView

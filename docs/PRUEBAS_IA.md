@@ -577,5 +577,213 @@ La evaluación de relevancia sobre una muestra más amplia corresponde a etapa 8
 - La comprobación positiva del protocolo se hizo con herramientas y datos de
   prueba, incluida la selección nativa de Ollama; no se usaron credenciales reales
   para realizar consultas al corpus restaurado durante el arranque.
-- La etapa 6 está publicada en `develop` con `8eca399`. Los cambios de etapa 7
-  quedan en el árbol de trabajo para su revisión y próximo commit; `main` no se modificó.
+- La etapa 6 está publicada en `develop` con `8eca399`. La etapa 7 se publicó
+  posteriormente con `dccc70f`, antes de iniciar etapa 8; `main` no se modificó.
+
+## Etapa 8: validación integral y evaluación reproducible
+
+La guía [VALIDACION_INTEGRAL.md](VALIDACION_INTEGRAL.md) define el corpus sintético,
+criterios de aceptación, aislamiento y comando de cierre. La evaluación nativa
+`ValidacionIntegralIaTest` requiere `BC_TEST_INTEGRAL=true`, URL de PostgreSQL de
+pruebas y Ollama local. Crea un esquema aleatorio y un servidor HTTP en puerto
+aleatorio; utiliza JWT reales de cuentas de prueba, sin acceder al corpus privado.
+
+El corpus versión 1 contiene tres temas, seis preguntas positivas y dos negativas.
+Se mide Recall@3 y MRR@3 por la posición del primer fragmento del problema esperado.
+Los umbrales previos son al menos 5/6 de recuperación, MRR >= 0,83 y ambas negativas
+vacías. Se incluyen problemas no publicados con canarios sintéticos para verificar
+la exclusión por permisos. Los modelos y límites relevantes se fijan en el test;
+el informe final registra sus digests.
+
+La prueba HTTP recorre login, creación del corpus, indexación con embeddings,
+búsqueda de los tres roles, extracción real de PDF/DOCX, respuesta con fuentes,
+abstención, una consulta con instrucciones adversarias, agente y rechazo de campos
+de imagen. Compara huellas de trece tablas de conocimiento, relaciones, archivos
+e historial antes y después de consultar. Las tablas de sesión, auditoría e índice
+derivado se excluyen de esa comparación por sus escrituras legítimas.
+
+La revisión también corrigió dos casos de navegación: al abrir una solución citada
+del problema ya visible se actualiza el detalle, y una selección lenta anterior
+no puede reemplazar la selección más reciente. Once pruebas seleccionadas de App
+y useKnowledge pasaron antes del cierre completo, incluidos esos nuevos casos.
+
+Las pruebas adversarias de JSON detectaron que se aceptaba la última ocurrencia
+de una clave repetida. Se activaron lectura estricta de duplicados y rechazo de
+tokens posteriores en la validación de acciones y citas. La repetición de los
+dieciséis casos de agente y respuestas pasó sin ejecutar herramientas para un
+objeto ambiguo ni aceptar su cita. La evidencia inicial queda en
+`.local/validacion8-json.log` y el resultado corregido en
+`.local/validacion8-json-estricto.log`.
+
+El primer ensayo HTTP aislado, previo al cierre completo, pasó con seis positivos
+en primera posición y ambas negativas vacías: Recall@3=1 y MRR@3=1. La respuesta
+con fuentes tardó 81,57 s y el agente 237,62 s. Se verificó ausencia de escrituras.
+El informe se conserva en `.local/evaluacion-integral-primer-ensayo.json`. Es una
+muestra sintética pequeña y no una estimación de precisión del catálogo privado.
+
+El comando `scripts/local/verify-ia-windows.ps1` ejecuta después toda la suite
+backend con OCR, PostgreSQL y modelos reales, exige un informe integral nuevo
+y aprobado y continúa con lint, cobertura y build del frontend de forma secuencial.
+`-SoloIntegral` es un modo de diagnóstico y no reemplaza esa verificación completa.
+
+### Cierre del backend de etapa 8, 14/11/2026
+
+- La corrida general iniciada el 13/11 quedó interrumpida antes de terminar.
+  Se conservó en `.local/validacion8-backend-interrumpido.log` y se inició una
+  corrida nueva el 14/11. El informe anterior no se aceptó como cierre completo.
+- `mvn clean verify` aprobado: 142 pruebas, sin fallos, errores ni omisiones.
+  Incluye la evaluación HTTP nativa, OCR, PostgreSQL y los ensayos anteriores.
+  Duración del backend: 23 min 03 s en esta corrida.
+- JaCoCo: 1577/1624 líneas (97,11 %) y 1246/1414 ramas (88,12 %). Se conserva
+  el umbral del 92 % de líneas y no se agregaron exclusiones.
+- El informe integral nuevo quedó APROBADO: seis positivos en primera posición,
+  Recall@3=1 y MRR@3=1; ambas consultas negativas quedaron sin coincidencias.
+  Se mantuvo la exclusión de los dos problemas no publicados.
+- La respuesta positiva quedó CON_FUENTES con texto literal verificado. La consulta
+  con instrucciones adversarias también devolvió una cita válida, sin el canario
+  inventado. El agente positivo ejecutó las tres herramientas y quedó CON_FUENTES;
+  la petición de crear tickets y borrar por SQL quedó SIN_SOLUCION, sin fuentes.
+- Las huellas de las trece tablas de conocimiento, relaciones, archivos e historial
+  permanecieron idénticas después de las consultas. Solo se permitieron las
+  escrituras legítimas de sesión, auditoría e índice derivado fuera de esa comparación.
+- Tiempos del ensayo HTTP: respuesta 82,98 s, agente 245,15 s y ensayo completo
+  563,82 s. Son observaciones con carga de modelos e instrumentación, no garantías
+  de latencia. Los nombres y digests quedan en el informe privado reproducible.
+- La instancia PostgreSQL de pruebas se cerró al finalizar. Se conserva V12
+  como última migración; no se evaluó ni modificó el corpus privado restaurado.
+
+Estos resultados describen el corpus sintético versión 1, de tres temas y ocho
+consultas. No estiman la precisión del catálogo real ni certifican resistencia
+frente a cualquier instrucción adversaria. Esa ampliación requiere casos esperados
+revisados por personas que conozcan el catálogo.
+
+### Cierre del frontend de etapa 8, 14/11/2026
+
+- 18 archivos y 80 pruebas aprobadas, sin fallos ni omisiones; tres casos nuevos
+  respecto de etapa 7 para actualización de fuentes y descarte de respuestas antiguas.
+  La corrida con cobertura duró aproximadamente 3 min 33 s.
+- Cobertura del alcance configurado (API, hooks y utilidades): líneas 182/182
+  (100 %), sentencias 97,69 %, funciones 96,09 % y ramas 95,48 %. Se conservaron
+  los umbrales e inclusiones. La UI se prueba mediante comportamiento y no forma
+  parte de ese porcentaje.
+- ESLint sin errores y con las tres advertencias anteriores de Fast Refresh.
+  Build de producción aprobado; permanece el aviso de bundle superior a 500 kB.
+- El script completo terminó con el informe integral nuevo APROBADO. No usó
+  resultados anteriores para dar por válido el cierre. Los logs finales tienen
+  prefijo `.local/validacion8-` y el informe está en `.local/evaluacion-integral.json`.
+- Entorno Windows reiniciado con el JAR verificado por SHA-256. Frontend HTTP 200,
+  navegación actualizada servida y respuesta 401 sin sesión en chatbot y agente.
+  Flyway confirmó V12 sin migraciones pendientes. Los casos positivos autenticados
+  se verificaron con las cuentas sintéticas del servidor HTTP aislado, no con
+  credenciales de usuarios del corpus restaurado.
+- La etapa 7 está publicada en `develop` con `dccc70f`. Los cambios de etapa 8
+  quedan sin commit ni push para su revisión; no se modificó `main`.
+
+### Ajuste de rendimiento posterior, 14/11/2026
+
+- La búsqueda inicial obligatoria del agente se ejecuta sin inferencia. El
+  recorrido normal conserva las tres herramientas y pasa de tres a dos decisiones
+  del modelo. Sin coincidencias no invoca al modelo de conversación.
+- La conversación usa `OLLAMA_KEEP_ALIVE=120s` por defecto, configurable entre
+  0 y 300 segundos enteros. Embeddings conserva descarga inmediata. No se
+  almacenan respuestas para reutilizarlas ni se cambian los permisos o fuentes.
+- Una primera suite quedó pausada por solicitud de la usuaria. Al reanudar, otra
+  corrida encontró clases incompletas en `target`, reemplazadas durante las pruebas
+  con el compilador del editor activo. No se aceptaron como validaciones completas.
+  El script compila ahora en `.local/backend-build`; Maven directo mantiene `target`.
+  El lanzador usa el JAR más reciente de ambas carpetas.
+- Corrida aislada final: `clean verify` aprobado, 143 pruebas sin fallos, errores
+  ni omisiones, incluyendo modelos, PostgreSQL, OCR y evaluación HTTP. Duración:
+  18 min 14 s. JaCoCo: 1584/1631 líneas (97,12 %) y 1258/1426 ramas (88,22 %).
+  Se mantiene el umbral del 92 % de líneas y no se agregan exclusiones.
+- Comparación dentro de una misma corrida, con dos inferencias en ambos modos:
+  permanencia 0s, 145,15 s; permanencia 120s, 96,97 s (33,2 % menos). Ambos
+  resultados quedaron CON_FUENTES con solución y pasos esperados.
+- Ensayo HTTP integral APROBADO: agente 122,32 s frente a los 245,15 s anteriores
+  (50,1 % menos). Agente sin solución: 6,79 s. Primera respuesta del chatbot:
+  83,24 s frente a 82,98 s; no mostró mejora material. Ensayo completo: 357,03 s.
+  Se conservaron seis positivos en primera posición, dos negativos sin coincidencias,
+  citas válidas, rechazo del canario adversario y huellas iguales de trece tablas.
+- El frontend no cambió durante este ajuste: se conserva la verificación anterior
+  de 80 pruebas, lint y build. No se repitió esa suite por cambios solo de backend
+  y scripts de arranque. No hay nuevas migraciones ni modelos descargados.
+- Entorno de uso iniciado con el JAR aprobado, coincidente por SHA-256 con el
+  artefacto aislado. Frontend HTTP 200; chatbot y agente devuelven 401 sin sesión.
+  Flyway confirmó V12 sin migraciones pendientes.
+- Logs finales: `.local/rendimiento-backend.log`; reportes y JAR en
+  `.local/backend-build`. Informes privados: `.local/rendimiento-agente.json` y
+  `.local/evaluacion-integral.json`. Comparaciones y límites en
+  [RENDIMIENTO_IA.md](RENDIMIENTO_IA.md). Los cambios siguen sin commit ni push.
+
+### Uso obligatorio del flujo solicitado, 14/11/2026
+
+Se retiró el ensayo de respuesta documental directa porque omitía el modelo.
+La usuaria requiere conservar Agente o Chatbot según el modo elegido. La medición
+de 5,97 s del ensayo retirado no describe el agente actual. Se conservaron las
+mejoras de permanencia y búsqueda inicial, y las validaciones de fuentes.
+
+Se agregó una regresión que exige dos llamadas con Uso.AGENTE incluso para una
+pregunta documental sin código y con una solución principal. La prueba existente
+del chatbot exige Uso.CHATBOT. Se eliminaron la búsqueda directa por título y sus
+pruebas específicas; no queda un selector que omita silenciosamente el modelo.
+
+Verificación aislada posterior: `clean verify` aprobado en 6 min 08 s; 144 pruebas
+contabilizadas, 139 aprobadas, cero fallos/errores y cinco ensayos largos de IA
+omitidos expresamente, ya verificados antes. OCR y PostgreSQL reales incluidos.
+JaCoCo: 1584/1631 líneas (97,12 %) y 1256/1426 ramas (88,08 %), con el mismo
+umbral del 92 % de líneas. Log: `.local/agente-modelo-obligatorio-verify.log`.
+Se conservan el protocolo con modelo y la prueba de Uso.CHATBOT; no se modifica
+el frontend ni se agregan migraciones, dependencias o modelos.
+
+### Contexto compacto y protección de imágenes guardadas, 14/11/2026
+
+- El chatbot mantiene la elección del modelo y cambia su protocolo interno a
+  `{"cita":n}`: selecciona una ventana literal, no vuelve a generar la cita.
+  Conserva tipos enteros, rango, claves duplicadas, rechazo de JSON adicional,
+  pertenencia al texto enviado y vigencia. Se probaron también decimales, strings,
+  desbordes y campos extra del selector. El agente recibe contexto compacto,
+  sin duplicar las soluciones leídas, y mantiene sus decisiones con modelo.
+- Evaluación HTTP integral APROBADA: chatbot 54880 ms (antes 83236), agente
+  75347 ms (antes 122322), negativo del agente 5598 ms. Recall@3=1 y MRR@3=1
+  para los seis positivos; dos negativos sin coincidencias. Citas y herramientas
+  válidas, sin canario adversario y huellas iguales de trece tablas. Duró 253734 ms.
+- La pregunta real de RRHH se comprobó con modelo y búsqueda reales, sobre una
+  conexión a la base restaurada con `default_transaction_read_only=on` verificado:
+  CON_FUENTES en 118792 ms, dos inferencias y tres herramientas. El informe privado
+  `.local/medicion-agente-real-contexto.json` no contiene preguntas ni respuestas.
+  Es una medición del servicio, no un máximo de latencia ni del navegador.
+- Protección solo de imágenes guardadas: copia PNG, OCR por posiciones, campos
+  de identidad e importes, filas geométricas para bloques OCR separados y caché
+  de la copia. Sin original ante fallos, sin datos enviados a modelos o servicios
+  externos. Originales conservados. WebP incorpora `imageio-webp` 3.15.0.
+  Se ocultan también imágenes incrustadas y fondos de HTML antiguo que no pasan
+  por el visor protegido. No se modifica el HTML almacenado.
+- Se aprobaron 33 pruebas enfocadas iniciales. La corrida general posterior
+  ejecutó 153 casos y detectó una expectativa anterior en la prueba de permisos:
+  una imagen de un píxel esperaba 200, pero ahora no se entrega si no se puede
+  proteger. Se aisló ese test de permisos del OCR, que conserva su ensayo real.
+  Se repitieron sus tres casos y los ocho del selector; se aprobaron los once.
+  Se repitieron además cuatro casos geométricos y el ensayo de imagen con OCR
+  real tras ampliar la detección por posición; aprobaron los cinco.
+- Reportes Surefire consolidados: 153 casos únicos, cero fallos, errores u
+  omisiones, incluidos OCR, PostgreSQL y Ollama reales. JaCoCo: 1685/1734 líneas
+  (97,17 %) y 1360/1560 ramas (87,18 %). Umbral de líneas del 92 % sin nuevas
+  exclusiones. Los cierres `verify` y el empaquetado aprobaron.
+- Frontend: corrida general de 83 pruebas aprobada; cierre posterior del visor
+  y HTML protegido de 15 pruebas aprobado, incluyendo un nuevo caso. Alcance
+  actual: 84 casos únicos. Cobertura de API, hooks y utilidades: 182/182 líneas
+  (100 %), sin incluir componentes en ese porcentaje. Lint sin errores y con
+  las tres advertencias anteriores; build aprobado con el aviso de tamaño previo.
+- Ensayo nativo de imagen actualizado: primera copia 7584 ms, caché 17 ms.
+  Se revisó visualmente la imagen sintética y se verificó el worker desde el JAR
+  empaquetado. El original sintético no se altera. Los límites y posibles omisiones
+  del OCR se describen en [PROTECCION_IMAGENES.md](PROTECCION_IMAGENES.md).
+- JAR desplegado coincidente por SHA-256, frontend HTTP 200 y chatbot, agente e
+  imágenes HTTP 401 sin sesión. V12 se conserva. Logs: `.local/privacidad-rendimiento-general.log`,
+  `.local/privacidad-rendimiento-cierre.log`, `.local/privacidad-geometria-cierre.log`
+  y `.local/privacidad-frontend-cierre-*`.
+
+Publicación del cierre: se incluyen la etapa 8, las mejoras de tiempo de respuesta
+y la protección de imágenes en `develop`, para su posterior integración a `main`.
+Las referencias anteriores a cambios sin commit describen el estado previo a esta
+publicación. No se incluyen los datos restaurados, credenciales, storage ni logs privados.

@@ -48,7 +48,7 @@ class ControllerDelegationTest {
     }
 
     @Test void delegaEndpointsDeArchivos() {
-        ArchivoService s=mock(ArchivoService.class);ArchivoController c=new ArchivoController(s);var ar=new ArchivoResponse(1L,"x.png","image/png",3,"abc","alt",0,true,Instant.now(),"/api/archivos/1/contenido",0);var file=new MockMultipartFile("archivo","x.png","image/png",new byte[]{1});
+        ArchivoService s=mock(ArchivoService.class);var protector=mock(com.municipio.base_conocimiento.archivos.privacidad.ProtectorImagenes.class);when(protector.proteger(any())).thenReturn(new byte[]{2});ArchivoController c=new ArchivoController(s,protector);var ar=new ArchivoResponse(1L,"x.png","image/png",3,"abc","alt",0,true,Instant.now(),"/api/archivos/1/contenido",0);var file=new MockMultipartFile("archivo","x.png","image/png",new byte[]{1});
         when(s.cargar(any(),anyLong(),any(),anyString(),anyInt())).thenReturn(ar);when(s.contenido(1L)).thenReturn(new ArchivoService.ContenidoArchivo("image/png","x.png",new byte[]{1}));when(s.actualizar(1L,"alt",1,0L)).thenReturn(ar);when(s.cambiarActivo(1L,false,0L)).thenReturn(ar);
         when(s.listar(any(),eq(1L))).thenReturn(List.of(ar));
         c.problema(1L,file,"alt",0);c.solucion(1L,file,"alt",0);c.paso(1L,file,"alt",0);c.imagenesProblema(1L);c.imagenesSolucion(1L);c.imagenesPaso(1L);c.contenido(1L);c.actualizar(1L,"alt",1,0L);c.activo(1L,new EstadoActivoRequest(false),0L);

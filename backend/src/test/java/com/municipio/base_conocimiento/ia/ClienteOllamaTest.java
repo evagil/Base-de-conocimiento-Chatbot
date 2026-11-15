@@ -111,6 +111,21 @@ class ClienteOllamaTest {
         assertThat(peticiones.getLast().has("images")).isFalse();
     }
 
+    @Test void conservaConversacionPeroDescargaEmbeddingsYValidaPermanencia() {
+        var config = configuracion(true, Duration.ofSeconds(4), 1048576);
+        cliente = new ClienteOllama(config, http, json, Duration.ofSeconds(120));
+        conversar();
+        assertThat(peticiones.getLast().path("keep_alive").asText()).isEqualTo("120s");
+        conversar();
+        assertThat(Collections.frequency(rutas, "/api/show")).isEqualTo(2);
+        cliente.vectorizar(List.of("Texto"));
+        assertThat(peticiones.getLast().path("keep_alive").asText()).isEqualTo("0");
+        for (Duration valor : Arrays.asList(null, Duration.ofSeconds(-1), Duration.ofSeconds(301), Duration.ofMillis(1500))) {
+            assertThatThrownBy(() -> new ClienteOllama(config, http, json, valor)).isInstanceOf(IllegalArgumentException.class);
+        }
+        new ClienteOllama(config, http, json, Duration.ofSeconds(300));
+    }
+
     @Test void estadoNoGeneraTextoYAdmiteModelosTodaviaNoInstalados() {
         var estado = cliente.estado();
         assertThat(estado.habilitada()).isTrue();

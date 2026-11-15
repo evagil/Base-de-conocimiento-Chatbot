@@ -20,7 +20,7 @@ if (Test-Path $iaConfigPath) {
     $iaConfig = Get-Content -LiteralPath $iaConfigPath -Raw | ConvertFrom-Json
     $iaVariables = @('IA_ENABLED', 'OLLAMA_BASE_URL', 'OLLAMA_CHAT_MODEL', 'OLLAMA_AGENT_MODEL',
         'OLLAMA_VISION_MODEL', 'OLLAMA_EMBEDDING_MODEL', 'OLLAMA_TIMEOUT', 'OLLAMA_CONNECT_TIMEOUT',
-        'OLLAMA_CONTEXT_TOKENS', 'IA_MAX_PROMPT_CHARS', 'IA_MAX_OUTPUT_TOKENS',
+        'OLLAMA_CONTEXT_TOKENS', 'OLLAMA_KEEP_ALIVE', 'IA_MAX_PROMPT_CHARS', 'IA_MAX_OUTPUT_TOKENS',
         'IA_MAX_EMBEDDING_BATCH', 'IA_MAX_RESPONSE_BYTES')
     foreach ($property in $iaConfig.PSObject.Properties) {
         if ($property.Name -notin $iaVariables) { throw "Variable de IA no admitida: $($property.Name)" }
@@ -69,9 +69,14 @@ if (Test-Path $agentConfigPath) {
     }
 }
 if (!(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue)) {
-    $sourceJar = Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'
+    $candidates = @(
+        (Join-Path $projectRoot 'backend\target\base_conocimiento-0.0.1-SNAPSHOT.jar'),
+        (Join-Path $localRoot 'backend-build\base_conocimiento-0.0.1-SNAPSHOT.jar')
+    )
+    $sourceJar = Get-Item -LiteralPath $candidates -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
     $jar = Join-Path $localRoot 'backend.jar'
-    if (Test-Path $sourceJar) { Copy-Item -LiteralPath $sourceJar -Destination $jar -Force }
+    if ($sourceJar) { Copy-Item -LiteralPath $sourceJar.FullName -Destination $jar -Force }
     if (!(Test-Path $jar)) { throw 'Falta el JAR del backend. Compilar antes de iniciar.' }
     $backendProcess = Start-Process -FilePath "$($config.javaHome)\bin\java.exe" -ArgumentList @('-jar', ('"' + $jar + '"')) -WorkingDirectory "$projectRoot\backend" -WindowStyle Hidden -RedirectStandardOutput "$localRoot\backend.log" -RedirectStandardError "$localRoot\backend-error.log" -PassThru
     $backendProcess.Id | Set-Content "$localRoot\backend.pid"

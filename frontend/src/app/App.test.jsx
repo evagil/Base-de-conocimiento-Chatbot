@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import App from './App.jsx'
+const { selectProblem } = vi.hoisted(() => ({ selectProblem: vi.fn() }))
 
 vi.mock('../api/knowledgeApi.js', () => ({ knowledgeApi: { images: vi.fn().mockResolvedValue([]) } }))
 vi.mock('../auth/AuthContext.jsx', () => ({
@@ -11,7 +12,7 @@ vi.mock('../hooks/useKnowledge.js', () => ({
   useKnowledge: () => ({
     tree: [],
     problem: { problema: { id: 3, subareaId: '', titulo: 'Problema anterior', descripcionHtml: '<p>Anterior</p>', estado: 'PUBLICADO', etiquetas: [] } },
-    selectProblem: vi.fn(), loadTree: vi.fn(),
+    selectProblem, loadTree: vi.fn(),
   }),
 }))
 vi.mock('../components/ProblemDetail.jsx', () => ({ default: () => null }))
@@ -21,6 +22,15 @@ vi.mock('../components/RichTextEditor.jsx', () => ({
 }))
 
 afterEach(() => { cleanup(); localStorage.removeItem('bc_sidebar_pinned'); vi.restoreAllMocks() })
+
+it('refreshes a cited solution even when its problem was already open', async () => {
+  selectProblem.mockClear()
+  render(<MemoryRouter initialEntries={['/problemas/3#solucion-8']}><App/></MemoryRouter>)
+  await waitFor(() => expect(selectProblem).toHaveBeenCalledWith(3))
+  fireEvent.click(screen.getByRole('button', { name: 'Chatbot', exact: true }))
+  expect(await screen.findByRole('dialog', { name: 'Chatbot del conocimiento' }, { timeout: 10000 })).toBeInTheDocument()
+  expect(selectProblem).toHaveBeenCalledTimes(1)
+})
 
 it('opens the chatbot from the authenticated workspace', async () => {
   render(<MemoryRouter><App/></MemoryRouter>)

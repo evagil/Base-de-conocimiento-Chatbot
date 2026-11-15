@@ -243,3 +243,58 @@ código y la descripción del problema. La pantalla muestra la solución, sus pa
 y las consultas realizadas. Solo admite texto; los documentos e imágenes se
 consultan desde el chatbot. Ver [AGENTE_TEXTUAL.md](AGENTE_TEXTUAL.md) para los
 límites, permisos, cancelación y reglas de abstención.
+
+## Validación integral: etapa 8
+
+Con Ollama abierto, ambos modelos instalados y Tesseract preparado, ejecutar
+desde la raíz `powershell -ExecutionPolicy Bypass -File scripts/local/verify-ia-windows.ps1`.
+Utiliza PostgreSQL de pruebas, un esquema efímero y cuentas sintéticas; no usa
+los datos restaurados como corpus de evaluación. Corre backend, evaluación HTTP,
+lint, cobertura y build de forma secuencial. Evitar otras inferencias mientras corre.
+
+`-SoloIntegral` repite únicamente el ensayo HTTP y no reemplaza el cierre completo.
+La validación deja un informe nuevo en `.local/evaluacion-integral.json` y logs
+con prefijo `validacion8-`. No descarga modelos, no publica resultados y no
+reinicia automáticamente la aplicación. Guía, criterios y límites en
+[VALIDACION_INTEGRAL.md](VALIDACION_INTEGRAL.md).
+
+El script de pruebas compila en `.local/backend-build` para evitar que el editor
+sobrescriba clases durante la ejecución. Allí quedan el JAR, `surefire-reports`
+y `site/jacoco`; Maven directo sigue usando `backend/target`. El lanzador elige
+el JAR más reciente de ambas carpetas al iniciar el backend.
+
+Las referencias a soluciones vuelven a leer el detalle aunque el problema ya
+estuviera abierto. Una petición antigua que termina tarde no reemplaza la
+selección más reciente en la pantalla.
+
+## Reducir las recargas de Ollama
+
+El backend conserva el modelo de conversación durante 120 segundos de inactividad.
+El agente ejecuta directamente la búsqueda inicial obligatoria y usa normalmente
+dos inferencias para elegir problema y solución. Una búsqueda sin fuentes termina
+sin invocar al modelo de conversación. Las comprobaciones de vigencia y permisos
+siguen ejecutándose; no se almacenan respuestas para reutilizarlas entre usuarios.
+
+Para cambiar el tiempo, agregar `"OLLAMA_KEEP_ALIVE":"120s"` al objeto JSON de
+`.local/ia-config.json` y reiniciar el backend. Admite segundos enteros de 0 a 300;
+`0s` vuelve a descargar el modelo después de cada respuesta. No reemplazar los
+otros valores de ese archivo. El lanzador ya incorpora esta opción.
+
+Los embeddings siguen descargándose tras cada operación. Ollama puede expulsar
+modelos por falta de memoria; la primera consulta y los cambios entre modelos
+pueden seguir siendo lentos. Evitar inferencias simultáneas en la aplicación Ollama
+mientras se usa el chatbot en esta PC.
+
+## Imágenes guardadas con datos ocultos
+
+Las imágenes del conocimiento se muestran mediante copias protegidas por OCR
+local. La primera vista puede requerir preparación; las siguientes reutilizan
+la copia. Si no se puede proteger, se muestra un mensaje y no el original.
+En la imagen ampliada se puede reintentar. Actualizar el navegador después del
+despliegue para retirar las vistas antiguas que ya estaban abiertas en memoria.
+
+La instalación local reutiliza Tesseract y los idiomas configurados en
+`.local/documentos-config.json`. No usa Ollama para esta protección ni modifica
+el storage original o la base restaurada. La detección de nombres depende de los
+rótulos y del OCR: revisar la imagen antes de compartir. Detalle y formatos en
+[PROTECCION_IMAGENES.md](PROTECCION_IMAGENES.md).

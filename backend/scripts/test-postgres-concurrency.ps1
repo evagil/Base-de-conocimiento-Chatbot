@@ -1,12 +1,17 @@
 param(
     [string]$PgBin = 'C:\Program Files\PostgreSQL\17\bin',
     [string]$JavaHome = 'C:\Program Files\Java\jdk-21',
-    [int]$Port = 55439
+    [int]$Port = 55439,
+    [ValidatePattern('^[A-Za-z0-9_,]+$')][string]$TestPattern
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $testRoot = Join-Path $projectRoot '.local'
 $testData = Join-Path $testRoot 'postgres-tests'
+$buildDirectory = [IO.Path]::GetFullPath((Join-Path $testRoot 'backend-build'))
+if (!$buildDirectory.StartsWith(([IO.Path]::GetFullPath($projectRoot) + [IO.Path]::DirectorySeparatorChar), [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'La salida de compilación debe quedar dentro del proyecto.'
+}
 $startedHere = $false
 $names = @('JAVA_HOME', 'PATH', 'MAVEN_OPTS', 'BC_TEST_DB_URL', 'BC_TEST_DB_USER', 'BC_TEST_DB_PASSWORD')
 $previous = @{}
@@ -45,7 +50,8 @@ try {
     $env:BC_TEST_DB_PASSWORD = ''
     Push-Location "$projectRoot\backend"
     try {
-        & .\mvnw.cmd -B clean verify
+        if ($TestPattern) { & .\mvnw.cmd -B "-Dbc.build.directory=$buildDirectory" "-Dtest=$TestPattern" test }
+        else { & .\mvnw.cmd -B "-Dbc.build.directory=$buildDirectory" clean verify }
         if ($LASTEXITCODE -ne 0) { throw 'Falló la verificación del backend. Revisar los reportes de Maven.' }
     } finally { Pop-Location }
 } finally {

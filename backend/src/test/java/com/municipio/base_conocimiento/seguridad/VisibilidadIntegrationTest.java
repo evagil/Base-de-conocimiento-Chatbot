@@ -38,6 +38,9 @@ import org.springframework.web.context.WebApplicationContext;
 @ActiveProfiles("securitytest")
 @Transactional
 class VisibilidadIntegrationTest {
+    // Aquí se prueban permisos. El OCR y los píxeles protegidos tienen ensayos reales separados.
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    com.municipio.base_conocimiento.archivos.privacidad.ProtectorImagenes protector;
     @Autowired WebApplicationContext context;
     @Autowired FilterChainProxy filters;
     @Autowired AreaService areas;
@@ -50,6 +53,8 @@ class VisibilidadIntegrationTest {
     long subarea;
 
     @BeforeEach void preparar() {
+        org.mockito.Mockito.when(protector.proteger(org.mockito.ArgumentMatchers.any())).thenReturn(
+                Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
         mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(filters).build();
         var area = areas.crear(new AreaRequest("Visibilidad", null, 0));
         subarea = areas.crearSubarea(area.id(), new SubareaRequest("Soporte", null, 0)).id();

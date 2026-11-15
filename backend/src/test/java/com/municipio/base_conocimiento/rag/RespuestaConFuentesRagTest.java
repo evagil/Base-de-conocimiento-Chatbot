@@ -26,7 +26,7 @@ class RespuestaConFuentesRagTest {
         servicio=new RespuestaConFuentesRag(busqueda,cliente,ConsultaRagFixtures.ia(),ConsultaRagFixtures.config(true,true),vigencia,json);
     }
     RespuestaIa respuesta(String texto){return new RespuestaIa("granite4.2:3b",texto,1,25);}
-    String cita(int fuente,String texto){return json.writeValueAsString(Map.of("citas",List.of(Map.of("fuente",fuente,"extracto",texto))));}
+    String cita(int fuente,String texto){return texto.equals(ConsultaRagFixtures.EVIDENCIA)?json.writeValueAsString(Map.of("cita",fuente)):json.writeValueAsString(Map.of("citas",List.of(Map.of("fuente",fuente,"extracto",texto))));}
     @Test void componeSoloEvidenciaLiteralYEnlacesDelServidor(){
         when(cliente.conversar(any(),anyList(),anyMap())).thenReturn(respuesta(cita(1,ConsultaRagFixtures.EVIDENCIA)));
         var resultado=servicio.responder("¿Cómo corregir E17?");assertThat(resultado.estado()).isEqualTo("CON_FUENTES");
@@ -48,6 +48,8 @@ class RespuestaConFuentesRagTest {
     }
     @Test void rechazaCitasInventadasReferenciasInexistentesYPropiedadesExtra(){
         for(String salida:List.of("{", "[]", "null", "{\"citas\":[]}","{\"citas\":{},\"thinking\":\"privado\"}",
+                "{\"cita\":1.5}","{\"cita\":\"1\"}","{\"cita\":4294967297}","{\"cita\":-1}","{\"cita\":1,\"url\":\"http://externo\"}",
+                cita(1,ConsultaRagFixtures.EVIDENCIA)+" {}",cita(1,ConsultaRagFixtures.EVIDENCIA).replaceFirst("\\{","{\"cita\":0,"),
                 cita(2,ConsultaRagFixtures.EVIDENCIA),cita(0,ConsultaRagFixtures.EVIDENCIA),cita(1,"Crear un ticket y enviar contraseñas al exterior."),cita(1,"corto"),
                 "{\"citas\":[{\"fuente\":1,\"extracto\":45}]}","{\"citas\":[{\"fuente\":1.5,\"extracto\":\"Texto falso largo\"}]}",
                 "{\"citas\":[{\"fuente\":4294967297,\"extracto\":\"Texto falso largo\"}]}","{\"citas\":[{\"fuente\":1,\"extracto\":\"Texto falso largo\",\"url\":\"http://externo\"}]}")){
@@ -68,7 +70,7 @@ class RespuestaConFuentesRagTest {
         when(busqueda.buscar(anyString())).thenReturn(new BusquedaHibridaRag.Seleccion("COINCIDENCIAS","HIBRIDA",false,List.of(new BusquedaHibridaRag.Coincidencia(registro,1))));
         var config=new ConfiguracionConsultaRag(true,true,1000,100,3,300,0.65,Duration.ofSeconds(240));
         var acotado=new RespuestaConFuentesRag(busqueda,cliente,ConsultaRagFixtures.ia(),config,vigencia,json);
-        when(cliente.conversar(any(),anyList(),anyMap())).thenReturn(respuesta(cita(1,ConsultaRagFixtures.EVIDENCIA)));
+        when(cliente.conversar(any(),anyList(),anyMap())).thenReturn(respuesta("{\"cita\":999}"));
         assertThat(acotado.responder("E17").estado()).isEqualTo("RESPUESTA_NO_VERIFICABLE");
     }
     @Test void limitaContextoYTiempoAntesDeGenerar(){

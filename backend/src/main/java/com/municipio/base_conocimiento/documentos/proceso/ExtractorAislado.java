@@ -36,6 +36,14 @@ public class ExtractorAislado {
         return json.readValue(Files.readAllBytes(resultado), ProtocoloWorker.Resultado.class);
     }
     List<String> comando(Path directorio) throws IOException {
+        return comando(directorio, ExtractorWorker.class);
+    }
+    public void ejecutarWorker(Path directorio, Class<?> worker, Duration timeout) throws IOException {
+        if (procesos.ejecutar(comando(directorio, worker), directorio, timeout) != 0) {
+            throw new IOException("El procesador aislado no pudo completar la operación.");
+        }
+    }
+    private List<String> comando(Path directorio, Class<?> worker) throws IOException {
         String classpath = String.join(File.pathSeparator, Arrays.stream(System.getProperty("java.class.path").split(Pattern.quote(File.pathSeparator)))
                 .map(p -> Path.of(p).toAbsolutePath().normalize().toString()).toList());
         boolean empaquetado = false;
@@ -61,8 +69,8 @@ public class ExtractorAislado {
         comando.add("-Dpdfbox.fontcache=" + directorio);
         ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
                 .filter(argumento -> argumento.startsWith("-javaagent:") && argumento.contains("org.jacoco.agent")).forEach(comando::add);
-        if (empaquetado) comando.add("-Dloader.main=" + ExtractorWorker.class.getName());
-        comando.addAll(List.of("-cp", classpath, empaquetado ? "org.springframework.boot.loader.launch.PropertiesLauncher" : ExtractorWorker.class.getName(), directorio.toString()));
+        if (empaquetado) comando.add("-Dloader.main=" + worker.getName());
+        comando.addAll(List.of("-cp", classpath, empaquetado ? "org.springframework.boot.loader.launch.PropertiesLauncher" : worker.getName(), directorio.toString()));
         return comando;
     }
 }

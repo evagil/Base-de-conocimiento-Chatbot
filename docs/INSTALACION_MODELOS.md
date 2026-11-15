@@ -51,9 +51,12 @@ sin solución disponible. No se usaron documentos o registros reales.
 | Selección con esquema JSON | 49,06 s | Eligió `buscar_problema`, pero puso el nombre de la herramienta como consulta en vez del error E17 |
 | Cliente Java real, fuente e instrucciones separadas | 40,86 s | Respuesta final de 21 tokens; prueba automatizada aprobada |
 
-Los tiempos incluyen carga y preparación del modelo, ya que `keep_alive=0` libera
+Los tiempos históricos de esta tabla incluyen carga y preparación del modelo,
+ya que en esos ensayos se usó `keep_alive=0`, que libera
 su memoria tras cada solicitud. Son observaciones de este equipo y estos prompts,
 no garantías de latencia. La memoria máxima de proceso no se instrumentó en esta etapa.
+La configuración actual conserva conversación hasta 120s para reducir recargas;
+ver [USO_WINDOWS.md](USO_WINDOWS.md#reducir-las-recargas-de-ollama).
 
 La selección de herramientas mostró una limitación concreta. El esquema JSON
 garantizó la forma del objeto, pero no la corrección semántica del argumento.
